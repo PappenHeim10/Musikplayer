@@ -1,37 +1,34 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="UTF-8" />
     <title>Musik Player</title>
     <link rel="stylesheet" href="index.css" />
-  </head>
-  <body>
+</head>
+<body>
     <header>
-      <p id="current_song">
-
-      </p>
+        <p id="current_song"></p>
     </header>
     <main>
-      <audio controls id="audio" src="audio/Low.mp3"><!-- OPTIM: Find a way to make the root file selectable if not itarate through all Data and find all Musik Files. -->
-      </audio>
-      <img src="" alt="cover" id="current_song_img">
-      <div id="progress">
-        <div id="progress_bar">
-          <div id="duration"></div>
+        <audio controls id="audio"></audio>  <img src="" alt="cover" id="current_song_img">
+        <div id="progress">
+            <div id="progress_bar">
+                <div id="duration"></div>
+            </div>
         </div>
-      </div>
-      <div class="btns">
-          <div>
-            <button id="previous_button">Previous</button>
-          </div>
-          <div>
-            <button id="play_pause_button" class="btn_play"></button>
-          </div>
-          <div>
-            <button id="next_button">Next</button>
-          </div>
-      </div>
+        <div class="btns">
+            <div>
+                <button id="previous_button">Previous</button>
+            </div>
+            <div>
+                <button id="play_pause_button" class="btn_play"></button>
+            </div>
+            <div>
+                <button id="next_button">Next</button>
+            </div>
+        </div>
     </main>
-  </body>
-  <script src="functions.js"></script> <!-- OPTIM: Minify and optimize JS file. -->
+
+    <script src="songs.js"></script>  <script src="functions.js"></script>
+</body>
 </html>

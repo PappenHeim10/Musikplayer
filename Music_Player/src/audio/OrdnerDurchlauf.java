@@ -42,4 +42,3 @@ public class OrdnerDurchlauf {
         // player.spieleSongs(songListe);
     }
 }
-//FIXME: irgenwie muss ich die liste an die js datei übergeben 
