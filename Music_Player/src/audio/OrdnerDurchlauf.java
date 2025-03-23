@@ -1,27 +1,45 @@
-import java.io.File; // NOTE: das wird benötigt um druch die dateien zu itereiern
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
-public class OrdnerDurchlauf { // HIer ist die Funktion dazu
+public class OrdnerDurchlauf {
 
-    public static void durchlaufeOrdner(String ordnerPfad) {
+    public static List<String> durchlaufeOrdner(String ordnerPfad) {
+        List<String> songPfade = new ArrayList<>(); // Liste für die Song-Pfade
+        File ordner = new File(ordnerPfad);
 
-        File ordner = new File(ordnerPfad); // der order wird ausgewählt
-        if (ordner.isDirectory()) { // wenn der ordner exestiert
-            File[] dateien = ordner.listFiles();// die dateien werden in eine liste gegeben 
-            if (dateien != null) { //OPTIM: checken ob die datei mit mp3 endet
-
-                for (File datei : dateien) { //NOTE: Rausfinden was diese Doppelpunkte bedeuten
+        if (ordner.isDirectory()) {
+            File[] dateien = ordner.listFiles();
+            if (dateien != null) {
+                for (File datei : dateien) {
                     if (datei.isDirectory()) {
-                        System.out.println("Ordner: " + datei.getAbsolutePath());
-                        durchlaufeOrdner(datei.getAbsolutePath()); // Rekursiver Aufruf
+                        // Rekursiver Aufruf und Zusammenführen der Listen
+                        songPfade.addAll(durchlaufeOrdner(datei.getAbsolutePath()));
                     } else {
-                        System.out.println("Datei: " + datei.getAbsolutePath());
+                        // Nur MP3-Dateien hinzufügen
+                        if (datei.getName().toLowerCase().endsWith(".mp3")) {
+                            songPfade.add(datei.getAbsolutePath());
+                        }
                     }
                 }
             }
         }
+        return songPfade; // Die Liste der Song-Pfade zurückgeben
     }
 
     public static void main(String[] args) {
-        durchlaufeOrdner("C:/Users/Cohen/Music");
+        List<String> songListe = durchlaufeOrdner("C:/Users/Cohen/Music");
+
+        // Ausgabe der gefundenen Songs (nur zur Demonstration)
+        System.out.println("Gefundene Songs:");
+        for (String songPfad : songListe) {
+            System.out.println(songPfad);
+        }
+
+        // Hier übergibst du die songListe an deinen Musikplayer
+        // Beispiel:
+        // MusikPlayer player = new MusikPlayer();
+        // player.spieleSongs(songListe);
     }
 }
+//FIXME: irgenwie muss ich die liste an die js datei übergeben 
