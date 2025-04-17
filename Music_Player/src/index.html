@@ -1,34 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <meta charset="UTF-8" />
-    <title>Musik Player</title>
-    <link rel="stylesheet" href="index.css" />
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src http://localhost:3000;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron Musik Player</title>
+    <style>
+        /* CSS bleibt gleich wie im vorherigen Beispiel */
+        body { font-family: sans-serif; padding: 10px; }
+        ul { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; border: 1px solid #ccc; }
+        li { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        li:hover { background-color: #f0f0f0; }
+        #player { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        #nowPlaying { font-weight: bold; margin-bottom: 10px; }
+        #errorMessage { color: red; margin-top: 10px; }
+    </style>
 </head>
 <body>
-    <header>
-        <p id="current_song"></p>
-    </header>
-    <main>
-        <audio controls id="audio"></audio>  <img src="" alt="cover" id="current_song_img">
-        <div id="progress">
-            <div id="progress_bar">
-                <div id="duration"></div>
-            </div>
-        </div>
-        <div class="btns">
-            <div>
-                <button id="previous_button">Previous</button>
-            </div>
-            <div>
-                <button id="play_pause_button" class="btn_play"></button>
-            </div>
-            <div>
-                <button id="next_button">Next</button>
-            </div>
-        </div>
-    </main>
 
-    <script src="songs.js"></script>  <script src="functions.js"></script>
+    <h1>Meine Musik</h1>
+    <div id="songList">
+        <p>Lade Songliste...</p>
+        <ul>
+            </ul>
+    </div>
+     <div id="errorMessage"></div>
+
+    <div id="player">
+        <h2>Player</h2>
+        <div id="nowPlaying">Nichts ausgewählt</div>
+        <audio id="audioPlayer" controls style="width: 100%;">
+            Ihr Browser unterstützt das Audio-Element nicht.
+        </audio>
+    </div>
+
+    <script>
+        // Warte, bis das gesamte HTML-Dokument geladen ist.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hole Referenzen zu den wichtigen HTML-Elementen.
+            const songListContainer = document.getElementById('songList').querySelector('ul');
+            const audioPlayer = document.getElementById('audioPlayer');
+            const nowPlayingElement = document.getElementById('nowPlaying');
+            const errorMessageElement = document.getElementById('errorMessage');
+
+            // Die URL zum internen Express-Server (läuft im Main-Prozess).
+            // Der Port muss mit dem in main.js übereinstimmen.
+            const serverBaseUrl = 'http://localhost:3000'; // <-- Port ANPASSEN falls geändert
+            const apiUrl = `${serverBaseUrl}/api/songs`;
+
+            // Funktion, um die Songliste von der API abzurufen.
+            async function fetchSongs() {
+                // Leere Fehlermeldungen und die Liste
+                errorMessageElement.textContent = '';
+                songListContainer.innerHTML = '<li>Lade Songs...</li>';
+
+                try {
+                    // Mache eine Netzwerkanfrage (GET) an die API-URL.
+                    const response = await fetch(apiUrl);
+
+                     // Detailliertere Fehlerbehandlung
+                    if (!response.ok) {
+                        let errorText = `HTTP Fehler! Status: ${response.status} ${response.statusText}`;
+                        try {
+                            // Versuche, eine JSON-Fehlermeldung vom Server zu lesen
+                            const errorJson = await response.json();
+                            if (errorJson && errorJson.error) {
+                                errorText = errorJson.error; // Zeige die Server-Fehlermeldung an
+                            }
+                        } catch (e) {
+                            // Falls die Fehlerantwort kein JSON war, ignoriere den Fehler hier
+                        }
+                        throw new Error(errorText);
+                    }
+
+                    // Wandle die JSON-Antwort in ein JavaScript-Array um.
+                    const songs = await response.json();
+
+                    // Leere die aktuelle Liste im HTML.
+                    songListContainer.innerHTML = '';
+
+                    // Überprüfe, ob Songs gefunden wurden.
+                    if (songs.length === 0) {
+                        songListContainer.innerHTML = '<li>Keine MP3-Songs im ausgewählten Ordner gefunden.</li>';
+                        return; // Beende die Funktion hier.
+                    }
+
+                    // Gehe durch jeden Song im Array.
+                    songs.forEach(song => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = song.filename;
+                        // Die URL zum Streamen des Songs (vom Server bereitgestellt)
+                        const streamUrl = `${serverBaseUrl}${song.url}`;
+                        listItem.dataset.songUrl = streamUrl;
+                        listItem.title = song.filename; // Zeige vollen Namen im Tooltip
+
+                        // Füge einen Event Listener hinzu: Wenn auf das Listenelement geklickt wird...
+                        listItem.addEventListener('click', () => {
+                            const urlToPlay = listItem.dataset.songUrl;
+                            console.log('Setze Player src auf:', urlToPlay);
+
+                            audioPlayer.src = urlToPlay;
+                            audioPlayer.play().catch(e => {
+                                // Fange Fehler ab, die beim Abspielen auftreten können
+                                console.error("Fehler beim Starten der Wiedergabe:", e);
+                                errorMessageElement.textContent = `Fehler beim Abspielen von ${song.filename}: ${e.message}`;
+                            });;
+                            nowPlayingElement.textContent = `Spielt gerade: ${song.filename}`;
+                        });
+                        songListContainer.appendChild(listItem);
+                    });
+
+                } catch (error) {
+                    // Fange Fehler ab, die beim Abrufen oder Verarbeiten aufgetreten sind.
+                    console.error('Fehler beim Abrufen der Songliste:', error);
+                    errorMessageElement.textContent = `Fehler beim Laden der Songs: ${error.message}`;
+                    songListContainer.innerHTML = ''; // Leere die Liste bei Fehler
+                }
+            }
+
+            // Rufe die Funktion auf, um die Songs beim Laden der Seite zu holen.
+            fetchSongs();
+
+            // Optional: Hier könntest du auf Nachrichten vom Main-Prozess lauschen,
+            // z.B. wenn der Benutzer einen neuen Ordner ausgewählt hat, um fetchSongs() erneut aufzurufen.
+            // window.electronAPI.onMusicFolderChanged(() => { // Erfordert ein Preload-Skript und IPC-Setup
+            //     console.log("Musikordner geändert, lade Liste neu...");
+            //     fetchSongs();
+            // });
+        });
+    </script>
+
 </body>
 </html>
