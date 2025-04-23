@@ -1,10 +1,15 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('node:path');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const { erstelleTracklist } = require('./musik-handler'); // Importiere die Funktion
+
+
 
 //Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
+
+
 
 const createWindow = () => {
   // Create the browser window.
@@ -13,6 +18,8 @@ const createWindow = () => {
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+
+      nodeIntegration: true,
     },
   });
 
@@ -22,6 +29,7 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
