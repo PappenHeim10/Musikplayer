@@ -9,6 +9,7 @@ const nextSong = document.querySelector('#nextSong');
 const previousSong = document.querySelector('#previousSong');
 const audioSource = document.querySelector('#audioSource');
 
+
 // Funktion zum Anzeigen der Trackliste im HTML
 function renderTrackList(trackList) {
     if (!songList) {
