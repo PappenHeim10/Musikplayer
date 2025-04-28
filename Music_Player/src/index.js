@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow} = require('electron');
 const path = require('path');
-const { erstelleTracklist } = require('./musik-handler'); // Importiere die Funktion
+const fs = require('fs'); // File system module hinzufügen
+
 
 
 
