@@ -22,6 +22,25 @@ const createWindow = () => {
     },
   });
 
+  const selectMusicFolder = async () => {
+    const result = await dialog.showOpendialog(mainWindow, {
+      properties: ['openDirectory'],
+    });
+  }
+  
+  selectMusicFolder();
+
+  const getMusicFiles = async (directory) => { // Asynchronische Funktion die die Musikdateien aus dem angegebenen Verzeichnis liest
+    try {
+    const files = await fs.promises.readdir(directory);
+    const musicFiles = files.filter(file => path.extname(file).toLowerCase() === '.mp3');
+    return musicFiles;
+    } catch (err) {
+    console.error('Fehler beim Lesen des Musikordners:', err);
+    return [];
+    }
+  };
+
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 

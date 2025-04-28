@@ -12,18 +12,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-    const getMusicFiles = async (directory) => {
-        try {
-        const files = await fs.promises.readdir(directory);
-        const musicFiles = files.filter(file => path.extname(file).toLowerCase() === '.mp3');
-        return musicFiles;
-        } catch (err) {
-        console.error('Fehler beim Lesen des Musikordners:', err);
-        return [];
-        }
-    };
 
-    getMusicFiles('C:/Users/3658201/Music').then(musicFiles => {
+
   
 
   
