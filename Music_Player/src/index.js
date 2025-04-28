@@ -1,4 +1,4 @@
-const { app, BrowserWindow} = require('electron');
+const { app, BrowserWindow, dialog} = require('electron');
 const path = require('path');
 const fs = require('fs'); // File system module hinzufügen
 
@@ -23,12 +23,10 @@ const createWindow = () => {
   });
 
   const selectMusicFolder = async () => {
-    const result = await dialog.showOpendialog(mainWindow, {
+    const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory'],
     });
   }
-  
-  selectMusicFolder();
 
   const getMusicFiles = async (directory) => { // Asynchronische Funktion die die Musikdateien aus dem angegebenen Verzeichnis liest
     try {
