@@ -22,7 +22,7 @@ Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermög
 *   **Node.js:** Wird für den Zugriff auf das Dateisystem und die Kommunikation zwischen Haupt- und Renderer-Prozess verwendet.
 *   **JavaScript:** Die Hauptprogrammiersprache für die Logik und die Benutzeroberfläche.
 *   **HTML/CSS:** Für die Struktur und das Styling der Benutzeroberfläche.
-* **`safe-file://` Protokoll:** Ein benutzerdefiniertes Protokoll, um den Zugriff auf lokale Dateien zu sichern.
+* **API** Es wird ein Server erstellt der die Route zu den Ordner über den PORT 3001 zurverfügung stellt
 
 ## Installation und Ausführung
 
@@ -65,7 +65,6 @@ Die folgenden Funktionen sind für zukünftige Versionen geplant:
 *   Unterstützung für weitere Audioformate (z.B. WAV, FLAC).
 *   Playlist-Verwaltung.
 *   Anzeige von Metadaten.
-*   Lautstärkeregelung.
 *   Zufallswiedergabe (Shuffle).
 *   Wiederholung (Repeat).
 *   Suchfunktion.
@@ -78,8 +77,4 @@ Beiträge zu diesem Projekt sind willkommen! Wenn du Fehler findest oder Verbess
 
 ## Kontakt
 
-Bei Fragen oder Anregungen kannst du dich gerne an [deine E-Mail-Adresse] wenden.
-
-## Lizenz
-
-[Hier die Lizenzinformationen einfügen, z.B. MIT-Lizenz]
+Bei Fragen oder Anregungen kannst du dich gerne an lastxhunterx.css@gmail.com wenden.
