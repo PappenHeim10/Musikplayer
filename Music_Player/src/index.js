@@ -1,20 +1,130 @@
-// Füge 'protocol' und 'url' zu den Imports hinzu
-const { app, BrowserWindow, dialog, ipcMain, protocol } = require('electron');
+// index.js (Korrigierte Version)
+
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const url = require('url'); // Wird für URL-Umwandlung benötigt
+const http = require('http'); // HTTP-Modul importieren
+const url = require('url'); // Für URL-Parsing
 
-// --- WICHTIG: Protokoll *vor* app.whenReady() registrieren ---
-// Wir nennen es 'safe-file'. Wähle einen Namen, der nicht mit Standardprotokollen kollidiert.
-protocol.registerSchemesAsPrivileged([
-    { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true /* Erlaube CORS für AudioContext etc. falls nötig */ } }
-]);
+// Korrekter Variablenname für den ausgewählten Ordner
+let selectedMusicDirectory = null;
+const PORT = 3001; // Port für den lokalen Server
 
+// --- HTTP Server erstellen (Dein Server-Code ist hier größtenteils korrekt) ---
+const server = http.createServer(async (req, res) => {
+    const parsedUrl = url.parse(req.url, true);
+    const pathname = parsedUrl.pathname;
+    console.log(`[Server] Anfrage empfangen: ${req.method} ${pathname}`);
+
+    // CORS Header
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    try {
+        // --- API Endpunkt: Songliste ---
+        if (pathname === '/api/songs' && req.method === 'GET') {
+            if (!selectedMusicDirectory) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Musikordner nicht ausgewählt' }));
+                return;
+            }
+            const musicFiles = await getMusicFiles(selectedMusicDirectory);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(musicFiles));
+            return;
+        }
+
+        // --- API Endpunkt: Audiodatei streamen ---
+        if (pathname.startsWith('/api/audio/') && req.method === 'GET') {
+            if (!selectedMusicDirectory) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('Musikordner nicht ausgewählt');
+                return;
+            }
+
+            const filename = decodeURIComponent(pathname.substring('/api/audio/'.length));
+            const requestedPath = path.join(selectedMusicDirectory, filename);
+
+            // ** Sicherheitsprüfung **
+            if (!requestedPath.startsWith(selectedMusicDirectory)) {
+                console.error(`[Server] Sicherheitsverstoß: Pfad ${requestedPath} liegt außerhalb von ${selectedMusicDirectory}`);
+                res.writeHead(403, { 'Content-Type': 'text/plain' });
+                res.end('Zugriff verweigert');
+                return;
+            }
+
+            // Prüfen, ob Datei existiert und streamen (mit Range Support)
+            try {
+                const stats = await fs.promises.stat(requestedPath);
+                if (!stats.isFile()) throw new Error('Keine Datei');
+
+                res.setHeader('Content-Type', 'audio/mpeg');
+                res.setHeader('Content-Length', stats.size);
+                res.setHeader('Accept-Ranges', 'bytes');
+
+                const range = req.headers.range;
+                if (range) {
+                    const parts = range.replace(/bytes=/, "").split("-");
+                    const start = parseInt(parts[0], 10);
+                    const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+                    const chunksize = (end - start) + 1;
+
+                    if (start >= stats.size || end >= stats.size || start < 0 || end < start) {
+                        // Ungültiger Range-Wert
+                         res.writeHead(416, { 'Content-Range': `bytes */${stats.size}` });
+                         return res.end();
+                    }
+
+
+                    const fileStream = fs.createReadStream(requestedPath, { start, end });
+                    res.writeHead(206, {
+                        'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+                        'Content-Length': chunksize,
+                        'Content-Type': 'audio/mpeg',
+                        'Accept-Ranges': 'bytes'
+                    });
+                    fileStream.pipe(res);
+                    console.log(`[Server] Sende Range ${start}-${end} für ${filename}`);
+                } else {
+                    res.writeHead(200); // Status 200 OK hinzugefügt
+                    const fileStream = fs.createReadStream(requestedPath);
+                    fileStream.pipe(res);
+                    console.log(`[Server] Sende ganze Datei ${filename}`);
+                }
+
+            } catch (fileError) {
+                 console.error(`[Server] Datei nicht gefunden oder Fehler: ${requestedPath}`, fileError);
+                 res.writeHead(404, { 'Content-Type': 'text/plain' });
+                 res.end('Audiodatei nicht gefunden');
+            }
+            return;
+        }
+
+        // --- Fallback für unbekannte Routen ---
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Nicht gefunden');
+
+    } catch (serverError) {
+         console.error('[Server] Interner Fehler:', serverError);
+         // Stelle sicher, dass die Antwort nicht schon gesendet wurde
+         if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+         }
+         // Beende die Antwort sicher, auch wenn Header schon gesendet wurden
+        res.end('Serverfehler');
+    }
+});
+
+// --- Server starten ---
+server.listen(PORT, () => {
+    console.log(`[Server] Lokaler HTTP-Server läuft auf http://localhost:${PORT}`);
+});
+
+// --- Squirrel Startup Check ---
 if (require('electron-squirrel-startup')) {
     app.quit();
 }
 
-// Funktion bleibt meist gleich, preload etc. sind korrekt
+// --- createWindow Funktion (unverändert) ---
 const createWindow = () => {
     const mainWindow = new BrowserWindow({
         width: 800,
@@ -25,50 +135,24 @@ const createWindow = () => {
             contextIsolation: true,
         },
     });
-
-    // Lade deine HTML-Datei
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
     mainWindow.webContents.openDevTools();
 };
 
-// --- Hilfsfunktion zum Lesen der Musikdateien (unverändert gut) ---
+// --- getMusicFiles Funktion (unverändert) ---
 const getMusicFiles = async (directory) => {
     try {
         const files = await fs.promises.readdir(directory);
-        // Filter nach MP3 (könnte erweitert werden: ['.mp3', '.wav', '.ogg'])
         const musicFiles = files.filter(file => path.extname(file).toLowerCase() === '.mp3');
-        return musicFiles; // Gibt nur die Dateinamen zurück
+        return musicFiles;
     } catch (err) {
         console.error('Fehler beim Lesen des Musikordners:', err);
         return [];
     }
 };
 
-
-// --- App ist bereit ---
+// --- App Events ---
 app.whenReady().then(() => {
-    // --- Handler für unser benutzerdefiniertes Protokoll registrieren ---
-    protocol.registerFileProtocol('safe-file', (request, callback) => {
-      try {
-          const requestedUrl = request.url; // Logge die ankommende URL
-          console.log(`[safe-file] Protokoll-Anfrage erhalten: ${requestedUrl}`);
-          const urlPath = decodeURI(requestedUrl.slice('safe-file://'.length));
-          console.log(`[safe-file] Dekodierter Pfad für Callback: ${urlPath}`); // Logge den dekodierten Pfad
-  
-          // Optional: Prüfen, ob die Datei existiert, bevor der Callback erfolgt
-          if (fs.existsSync(urlPath)) {
-               console.log(`[safe-file] Datei existiert. Rufe Callback auf.`);
-               callback({ path: urlPath });
-          } else {
-               console.error(`[safe-file] FEHLER: Datei unter dekodiertem Pfad NICHT gefunden: ${urlPath}`);
-               callback({ error: -6 }); // net::ERR_FILE_NOT_FOUND
-          }
-      } catch (error) {
-           console.error(`[safe-file] FEHLER bei Verarbeitung von ${request.url}: ${error}`);
-           callback({ error: -2 }); // net::FAILED (generischer Fehler)
-      }
-  });
-
     createWindow();
 
     app.on('activate', () => {
@@ -77,47 +161,28 @@ app.whenReady().then(() => {
         }
     });
 
-    // --- IPC Handler für Ordnerauswahl ANPASSEN ---
+    // --- IPC Handler für Ordnerauswahl KORRIGIERT ---
     ipcMain.handle('open-music-folder-dialog', async (event) => {
-        const webContents = event.sender; // WebContents, die die Anfrage gesendet haben
-        const win = BrowserWindow.fromWebContents(webContents); // Das zugehörige Fenster
+        // Wichtig: Finde das Fenster, das die Anfrage gesendet hat
+        const webContents = event.sender;
+        const win = BrowserWindow.fromWebContents(webContents);
+        if (!win) return; // Fenster nicht gefunden
 
-        if (!win) return; // Fenster existiert nicht mehr
+        // *** HIER WURDE DER DIALOG-AUFRUF HINZUGEFÜGT ***
+        const result = await dialog.showOpenDialog(win, {
+             properties: ['openDirectory'],
+             title: 'Musikordner auswählen'
+        });
 
-        try {
-            const result = await dialog.showOpenDialog(win, { // Dialog an das richtige Fenster binden
-                properties: ['openDirectory'],
-                title: 'Musikordner auswählen',
-            });
-
-            if (!result.canceled && result.filePaths.length > 0) {
-                const selectedDirectory = result.filePaths[0];
-                console.log('Ausgewählter Ordner:', selectedDirectory);
-                const musicFilenames = await getMusicFiles(selectedDirectory); // Nur Dateinamen
-
-                // Erstelle URLs mit dem benutzerdefinierten Protokoll
-                const musicFileUrls = musicFilenames.map(filename => {
-                    const fullPath = path.join(selectedDirectory, filename);
-                    // Konvertiere den Pfad in eine File-URL und ersetze 'file:///' durch 'safe-file://'
-                    // Wichtig: Pfade für URLs normalisieren (Backslashes zu Slashes)
-                    const normalizedPath = fullPath.replace(/\\/g, '/');
-                    // Kodieren für URL-Sicherheit (z.B. Leerzeichen -> %20)
-                    return `safe-file://${encodeURI(normalizedPath)}`;
-                });
-
-                console.log("Sende Musikdatei-URLs:", musicFileUrls);
-
-                // Sende die URLs an den Renderer
-                webContents.send('music-files', { musicFiles: musicFileUrls }); // Nur URLs senden reicht
-
-            } else {
-                console.log('Kein Ordner ausgewählt oder Dialog abgebrochen.');
-            }
-        } catch (err) {
-            console.error('Fehler im Dialog oder beim Verarbeiten der Dateien:', err);
-            // Optional: Fehler an den Renderer senden
-            // webContents.send('error-message', 'Fehler beim Öffnen des Ordners.');
+        if (result && !result.canceled && result.filePaths.length > 0) {
+            selectedMusicDirectory = result.filePaths[0]; // Pfad speichern
+            console.log('[Main] Musikordner gesetzt:', selectedMusicDirectory);
+            // Renderer benachrichtigen, dass er die Liste neu laden soll
+            event.sender.send('music-folder-selected');
+        } else {
+             console.log('[Main] Ordnerauswahl abgebrochen oder fehlgeschlagen.');
         }
+        // Der Handler muss nichts zurückgeben, da wir 'invoke' nur zum Triggern nutzen
     });
 });
 
@@ -125,4 +190,11 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
     }
+});
+
+// *** HIER WURDE DER SERVER SHUTDOWN HINZUGEFÜGT ***
+app.on('will-quit', () => {
+    server.close(() => {
+         console.log('[Server] HTTP-Server wurde geschlossen.');
+    });
 });

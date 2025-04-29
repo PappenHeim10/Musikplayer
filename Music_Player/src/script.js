@@ -1,242 +1,375 @@
+/**
+ * Renderer-Prozess Skript (script.js) für den Electron Musik Player
+ * Nutzt die lokale REST API (http://localhost:3001) zum Laden der Songliste und Audiodateien.
+ */
 document.addEventListener("DOMContentLoaded", function () {
+    // DOM-Elemente holen
     const playButton = document.getElementById("playButton");
-    const nextButton = document.getElementById("nextButton"); // Korrigierte ID
-    const prevButton = document.getElementById("prevButton"); // Korrigierte ID
-    const stopButton = document.getElementById("stopTrackButton"); // Hinzugefügt
+    const nextButton = document.getElementById("nextButton");
+    const prevButton = document.getElementById("prevButton");
+    const stopButton = document.getElementById("stopTrackButton");
     const volumeSlider = document.getElementById("volumeControl");
     const progressBar = document.getElementById("progressBar");
     const openFolderButton = document.getElementById("openFolderButton");
-    const songList = document.getElementById("songList").querySelector('ul'); // UL selektieren
-    const leereListe = document.getElementById("leereSongListe");
+    const songListElement = document.getElementById("songList")?.querySelector('ul'); // Sicherstellen, dass UL existiert
+    const leereListeElement = document.getElementById("leereSongListe");
     const nowPlayingElement = document.getElementById("nowPlaying");
     const errorMessageElement = document.getElementById("errorMessage");
 
-    let audio = new Audio(); // Das dynamische Audio-Objekt ist gut
-    let currentTrackIndex = -1; // Startet bei -1, da noch nichts geladen
-    let isPlaying = false;
-    let tracks = []; // Wird die Liste der 'safe-file://' URLs enthalten
+    // Player-Zustand
+    let audio = new Audio(); // Das HTMLAudioElement für die Wiedergabe
+    let currentTrackIndex = -1; // Index des aktuellen Tracks in der 'tracks'-Liste, -1 für keinen
+    let isPlaying = false; // Spielt gerade ein Track?
+    let tracks = []; // Array zum Speichern der Dateinamen der Songs
 
-    // --- Empfange die Musikdatei-URLs ---
-    window.electronAPI.sendMusicFiles((data) => {
-        console.log("Empfangene Song-URLs:", data.musicFiles);
-        tracks = data.musicFiles || []; // Empfangene URLs speichern (oder leeres Array)
+    const API_BASE_URL = 'http://localhost:3001'; // Basis-URL für die lokale API
+
+    // --- Kernfunktionen ---
+
+    /**
+     * Lädt die Songliste von der lokalen API und aktualisiert die UI.
+     */
+    async function fetchAndDisplaySongs() {
+        console.log("Versuche Songliste von API zu laden...");
         errorMessageElement.textContent = ''; // Alte Fehler löschen
+        nowPlayingElement.textContent = 'Lade Liste...';
+        leereListeElement.textContent = 'Lade Liste...'; // Update Platzhaltertext
+        leereListeElement.style.display = 'block';
+        if (songListElement) songListElement.innerHTML = ''; // Liste leeren
 
-        if (tracks.length > 0) {
-             leereListe.style.display = 'none'; // Platzhalter ausblenden
-            // Liste mit Dateinamen füllen
-            songList.innerHTML = tracks.map(trackUrl => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/songs`);
+            if (!response.ok) {
+                // Versuch, eine Fehlermeldung vom Server zu bekommen
+                let errorMsg = `Fehler beim Laden der Songliste: ${response.statusText}`;
                 try {
-                    // Extrahiere den Dateinamen aus der URL
-                    const decodedPath = decodeURI(trackUrl.slice('safe-file://'.length));
-                    const filename = decodedPath.split(/[\\/]/).pop(); // Funktioniert plattformübergreifend
-                    return `<li data-url="${trackUrl}">${filename}</li>`; // URL als data-Attribut speichern
-                } catch(e) {
-                    console.error("Fehler beim Dekodieren/Anzeigen des Tracks:", trackUrl, e);
-                    return `<li>Track konnte nicht angezeigt werden</li>`;
-                }
-            }).join('');
-            // Optional: Ersten Track laden, aber noch nicht abspielen
-             loadTrack(0);
-             // Mache die Liste klickbar
-             setupSongListClick();
-        } else {
-            songList.innerHTML = ''; // Liste leeren
-             leereListe.style.display = 'block'; // Platzhalter anzeigen
-             nowPlayingElement.textContent = 'Keine Songs gefunden.';
-             audio.src = ''; // Audio-Quelle zurücksetzen
-        }
-    });
+                    const errorData = await response.json();
+                    if (errorData && errorData.error) {
+                        errorMsg = errorData.error; // Z.B. "Musikordner nicht ausgewählt"
+                    }
+                } catch (e) { /* Ignoriere JSON-Parsing-Fehler hier */ }
+                throw new Error(errorMsg);
+            }
 
-    // --- Track laden ---
+            const fetchedFilenames = await response.json();
+            tracks = fetchedFilenames || []; // Speichere die Dateinamen
+
+            console.log("Empfangene Dateinamen:", tracks);
+
+            if (tracks.length > 0) {
+                leereListeElement.style.display = 'none'; // Platzhalter ausblenden
+                nowPlayingElement.textContent = 'Wähle einen Song';
+                // Liste mit Dateinamen füllen
+                if (songListElement) {
+                    songListElement.innerHTML = tracks.map((filename, index) => {
+                        // Einfacher Dateiname ohne Pfad wird angezeigt
+                        return `<li data-index="${index}">${filename}</li>`;
+                    }).join('');
+                    setupSongListClick(); // Klick-Listener für die Liste aktivieren
+                }
+                 // Ersten Track laden (optional, ohne Autoplay)
+                 // loadTrack(0);
+            } else {
+                 leereListeElement.textContent = 'Keine MP3s im Ordner gefunden.';
+                 nowPlayingElement.textContent = 'Keine Songs';
+            }
+
+        } catch (error) {
+            console.error("Fehler beim Holen der Songliste:", error);
+            errorMessageElement.textContent = `Fehler: ${error.message}`;
+            leereListeElement.textContent = 'Fehler beim Laden der Liste.';
+             leereListeElement.style.display = 'block';
+            nowPlayingElement.textContent = 'Fehler';
+            tracks = []; // Liste leeren im Fehlerfall
+            if (songListElement) songListElement.innerHTML = '';
+        }
+    }
+
+    /**
+     * Lädt einen bestimmten Track basierend auf seinem Index in der 'tracks'-Liste.
+     * Setzt die src des Audio-Elements auf die entsprechende API-URL.
+     * @param {number} index - Der Index des zu ladenden Tracks im 'tracks'-Array.
+     */
     function loadTrack(index) {
         if (index >= 0 && index < tracks.length) {
-            const trackUrl = tracks[index];
-            console.log("Lade Track:", trackUrl);
-            audio.src = trackUrl; // Die 'safe-file://' URL setzen
-            audio.load(); // Wichtig: load() aufrufen nach src-Änderung
+            const filename = tracks[index];
+            // Wichtig: Dateiname korrekt für URL kodieren!
+            const trackUrl = `${API_BASE_URL}/api/audio/${encodeURIComponent(filename)}`;
+
+            console.log("Lade Track von API:", trackUrl);
+            errorMessageElement.textContent = ''; // Alte Fehler löschen
+
+            audio.src = trackUrl; // Die HTTP-URL setzen
+            audio.load(); // load() aufrufen
             currentTrackIndex = index;
 
-            // Update "Now Playing" Anzeige
-            try {
-                 const decodedPath = decodeURI(trackUrl.slice('safe-file://'.length));
-                 const filename = decodedPath.split(/[\\/]/).pop();
-                 nowPlayingElement.textContent = `Geladen: ${filename}`;
-            } catch(e) {
-                 nowPlayingElement.textContent = `Geladen: Fehler`;
-            }
-             updateSongListHighlight(); // Markiere den aktuellen Song in der Liste
-
+            // UI aktualisieren
+            nowPlayingElement.textContent = `Geladen: ${filename}`;
+            updateSongListHighlight();
 
         } else {
             console.warn("Ungültiger Index für loadTrack:", index);
             nowPlayingElement.textContent = 'Fehler beim Laden.';
+            errorMessageElement.textContent = 'Fehler: Ungültiger Song-Index.';
         }
     }
 
-    // --- Track abspielen/pausieren (verbessert mit Promise) ---
+    /**
+     * Spielt den aktuell geladenen Track ab oder pausiert ihn.
+     */
     function togglePlayPause() {
         if (!audio.src || currentTrackIndex < 0) {
-            errorMessageElement.textContent = 'Bitte zuerst einen Ordner wählen.';
+            errorMessageElement.textContent = 'Kein Song geladen. Bitte Ordner wählen.';
+            console.log("Kein Song zum Abspielen/Pausieren geladen.");
             return;
         }
 
         if (isPlaying) {
             audio.pause();
-            isPlaying = false;
-            playButton.textContent = "Play";
-            console.log("Pausiert");
         } else {
+            // audio.play() gibt ein Promise zurück
             const playPromise = audio.play();
             if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    isPlaying = true;
-                    playButton.textContent = "Pause";
-                    console.log("Spielt");
-                    errorMessageElement.textContent = ''; // Fehler löschen
-                     // Update "Now Playing" auf "Spielt: ..."
-                    try {
-                        const decodedPath = decodeURI(audio.src.slice('safe-file://'.length));
-                        const filename = decodedPath.split(/[\\/]/).pop();
-                        nowPlayingElement.textContent = `Spielt: ${filename}`;
-                   } catch(e) {
-                        nowPlayingElement.textContent = `Spielt: Fehler`;
-                   }
-
-                }).catch(error => {
-                    console.error("Fehler beim Abspielen:", error);
+                playPromise.catch(error => {
+                    // Fehler beim Abspielen (z.B. Browser erfordert Nutzerinteraktion)
+                    console.error("Fehler beim Starten der Wiedergabe:", error);
                     errorMessageElement.textContent = `Fehler: ${error.message}`;
-                    isPlaying = false;
+                    isPlaying = false; // Sicherstellen, dass der Status korrekt ist
                     playButton.textContent = "Play";
+                    playButton.classList.remove("playing");
+                    playButton.classList.add("pausing");
                 });
             }
         }
     }
 
-
-    // --- Track stoppen ---
+    /**
+     * Stoppt die Wiedergabe und setzt die Zeit zurück.
+     */
     function stopTrack() {
         audio.pause();
-        audio.currentTime = 0; // Zeit zurücksetzen
-        isPlaying = false;
-        playButton.textContent = "Play";
-        progressBar.value = 0; // Fortschrittsbalken zurücksetzen
+        // Nur zurücksetzen, wenn ein Track geladen ist
+        if (!isNaN(audio.duration) && audio.duration > 0) {
+             audio.currentTime = 0;
+        }
+        // isPlaying wird durch 'pause'-Event aktualisiert
+        // progressBar.value = 0; // Wird durch 'timeupdate'-Event aktualisiert
         nowPlayingElement.textContent = 'Gestoppt';
         console.log("Gestoppt");
     }
 
-    // --- Nächster Track ---
+    /**
+     * Lädt und spielt den nächsten Track in der Liste.
+     */
     function nextTrack() {
         if (tracks.length > 0) {
+            const wasPlaying = isPlaying; // Merken, ob vorher gespielt wurde
+            stopTrack(); // Aktuellen stoppen
             const nextIndex = (currentTrackIndex + 1) % tracks.length;
             loadTrack(nextIndex);
-            // Wenn vorher gespielt wurde, direkt weiter spielen
-            if (isPlaying || playButton.textContent === "Pause") { // Check button text as fallback
-                 // Kurze Verzögerung, damit 'load' Zeit hat, sonst schlägt play() manchmal fehl
-                 setTimeout(() => togglePlayPause(), 50);
+            // Wenn vorher gespielt wurde, den neuen Track direkt starten
+            if (wasPlaying) {
+                 // Kurze Verzögerung manchmal hilfreich
+                 setTimeout(() => audio.play().catch(e => console.error("Play failed after next:", e)), 50);
             }
+        } else {
+             console.log("Keine Tracks in der Liste für 'Next'.");
         }
     }
 
-    // --- Vorheriger Track ---
+    /**
+     * Lädt und spielt den vorherigen Track in der Liste.
+     */
     function prevTrack() {
         if (tracks.length > 0) {
+             const wasPlaying = isPlaying;
+             stopTrack();
             const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
             loadTrack(prevIndex);
-             if (isPlaying || playButton.textContent === "Pause") {
-                 setTimeout(() => togglePlayPause(), 50);
+             if (wasPlaying) {
+                 setTimeout(() => audio.play().catch(e => console.error("Play failed after prev:", e)), 50);
             }
-        }
-    }
-
-    // --- Lautstärke aktualisieren ---
-    function updateVolume() {
-        audio.volume = volumeSlider.value;
-    }
-
-    // --- Fortschrittsbalken aktualisieren ---
-    function updateProgressBar() {
-        if (audio.duration) { // Nur wenn Dauer bekannt ist (NaN vermeiden)
-            progressBar.value = (audio.currentTime / audio.duration) * 100;
         } else {
-            progressBar.value = 0;
+             console.log("Keine Tracks in der Liste für 'Prev'.");
         }
     }
 
-    // --- Springen im Track via Fortschrittsbalken ---
-     progressBar.addEventListener('input', () => {
-         if (audio.duration && currentTrackIndex >= 0) {
+    // --- UI Hilfsfunktionen ---
+
+    /**
+     * Aktualisiert die Lautstärke des Audio-Elements basierend auf dem Slider.
+     */
+    function updateVolume() {
+        if (volumeSlider) {
+            audio.volume = volumeSlider.value;
+        }
+    }
+
+    /**
+     * Aktualisiert den Fortschrittsbalken basierend auf der aktuellen Wiedergabezeit.
+     */
+    function updateProgressBar() {
+        if (progressBar && audio.duration) { // Nur wenn Dauer bekannt ist
+            const value = (audio.currentTime / audio.duration) * 100;
+            progressBar.value = value || 0;
+        } else if (progressBar) {
+            progressBar.value = 0; // Zurücksetzen, wenn keine Dauer
+        }
+    }
+
+    /**
+     * Verarbeitet das Springen im Track durch Klicken/Ziehen des Fortschrittsbalkens.
+     */
+    function seekTrack() {
+         if (progressBar && audio.duration && currentTrackIndex >= 0) {
              const time = (progressBar.value / 100) * audio.duration;
              audio.currentTime = time;
          }
-     });
+     }
 
 
-    // --- Klick auf Song in der Liste ---
+    /**
+     * Fügt Event-Listener zu den Listeneinträgen hinzu, um Tracks per Klick zu laden.
+     */
     function setupSongListClick() {
-        songList.addEventListener('click', (event) => {
-            if (event.target && event.target.nodeName === 'LI') {
-                const urlToPlay = event.target.dataset.url;
-                const indexToPlay = tracks.indexOf(urlToPlay);
-                if (indexToPlay !== -1) {
-                     loadTrack(indexToPlay);
-                     // Wenn gerade pausiert war oder gestoppt, nur laden. Wenn gespielt -> direkt abspielen
-                     if (isPlaying || playButton.textContent === "Pause"){
-                          setTimeout(() => togglePlayPause(), 50); // Start playing
-                     } else {
-                          // Nur laden, nicht automatisch starten wenn pausiert/gestoppt war
-                     }
+        if (!songListElement) return;
+        songListElement.addEventListener('click', (event) => {
+            const targetLi = event.target?.closest('li'); // Klick auf LI oder Kindelement?
+            if (targetLi && targetLi.dataset.index !== undefined) {
+                const indexToPlay = parseInt(targetLi.dataset.index, 10);
+                if (!isNaN(indexToPlay)) {
+                    const wasPlaying = isPlaying;
+                    // stopTrack(); // Nicht stoppen, loadTrack macht das implizit durch src-Änderung
+                    loadTrack(indexToPlay);
+                    if (wasPlaying) {
+                         setTimeout(() => audio.play().catch(e => console.error("Play failed after list click:", e)), 50);
+                    }
                 }
             }
         });
     }
 
-     // --- Markiere aktuellen Song in der Liste ---
-     function updateSongListHighlight() {
-         const listItems = songList.querySelectorAll('li');
+    /**
+     * Hebt den aktuell geladenen Song in der Liste hervor.
+     */
+    function updateSongListHighlight() {
+         if (!songListElement) return;
+         const listItems = songListElement.querySelectorAll('li');
          listItems.forEach((item, index) => {
              if (index === currentTrackIndex) {
-                 item.style.fontWeight = 'bold'; // Oder eine CSS-Klasse hinzufügen
-                 item.style.backgroundColor = '#eee';
+                 item.style.fontWeight = 'bold';
+                 item.style.backgroundColor = '#e0e0e0'; // Beispiel-Hervorhebung
              } else {
                  item.style.fontWeight = 'normal';
-                  item.style.backgroundColor = '';
+                 item.style.backgroundColor = '';
              }
          });
      }
 
 
-    // --- Event Listener ---
-    playButton.addEventListener("click", togglePlayPause);
-    nextButton.addEventListener("click", nextTrack);
-    prevButton.addEventListener("click", prevTrack);
-    if (stopButton) stopButton.addEventListener("click", stopTrack); // Listener für Stop
-    volumeSlider.addEventListener("input", updateVolume);
+    // --- Event Listener Initialisierung ---
 
-    // Audio-Events
+    // Player Controls
+    if (playButton) playButton.addEventListener("click", togglePlayPause);
+    if (nextButton) nextButton.addEventListener("click", nextTrack);
+    if (prevButton) prevButton.addEventListener("click", prevTrack);
+    if (stopButton) stopButton.addEventListener("click", stopTrack);
+    if (volumeSlider) volumeSlider.addEventListener("input", updateVolume);
+    if (progressBar) progressBar.addEventListener("input", seekTrack); // Listener für Seeking
+
+    // Audio Element Events
+    audio.addEventListener("play", () => {
+        isPlaying = true;
+        playButton.textContent = "Pause";
+        playButton.classList.remove("pausing");
+        playButton.classList.add("playing");
+        console.log("Event: play");
+    });
+
+    audio.addEventListener("pause", () => {
+        isPlaying = false;
+        playButton.textContent = "Play";
+        playButton.classList.remove("playing");
+        playButton.classList.add("pausing");
+        console.log("Event: pause");
+    });
+
     audio.addEventListener("timeupdate", updateProgressBar);
-    audio.addEventListener("ended", nextTrack); // Automatisch zum nächsten Titel springen
+    audio.addEventListener("ended", nextTrack); // Zum nächsten Song springen, wenn einer endet
+
     audio.addEventListener("error", (e) => {
         console.error("Audio Wiedergabefehler:", audio.error, e);
-        errorMessageElement.textContent = `Fehler beim Abspielen: ${audio.error?.message || 'Unbekannt'}`;
+        let errorDetail = 'Unbekannter Fehler';
+        if (audio.error) {
+            switch (audio.error.code) {
+                case MediaError.MEDIA_ERR_ABORTED: errorDetail = 'Laden abgebrochen.'; break;
+                case MediaError.MEDIA_ERR_NETWORK: errorDetail = 'Netzwerkfehler.'; break;
+                case MediaError.MEDIA_ERR_DECODE: errorDetail = 'Dekodierungsfehler.'; break;
+                case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: errorDetail = 'Format nicht unterstützt oder Quelle nicht gefunden.'; break;
+                default: errorDetail = `Code ${audio.error.code}`;
+            }
+        }
+        errorMessageElement.textContent = `Fehler beim Abspielen: ${errorDetail}`;
         stopTrack(); // Wiedergabe stoppen bei Fehler
     });
+
      audio.addEventListener("canplay", () => {
          // Track ist bereit zum Abspielen (genug Daten geladen)
-         errorMessageElement.textContent = ''; // Fehler löschen, falls einer angezeigt wurde
+         errorMessageElement.textContent = ''; // Alte Fehler löschen
+         console.log("Event: canplay");
      });
 
+     audio.addEventListener("loadstart", () => {
+         // Beginnt mit dem Laden der Ressource
+         console.log("Event: loadstart");
+         errorMessageElement.textContent = ''; // Fehler löschen beim Starten eines neuen Ladevorgangs
+          // Setze Progressbar zurück, während geladen wird
+          if (progressBar) progressBar.value = 0;
+     });
 
-    // Ordnerauswahl starten
-    openFolderButton.addEventListener('click', () => {
-        console.log("Öffne Ordnerauswahl...");
-        errorMessageElement.textContent = ''; // Alte Fehler löschen
-        window.electronAPI.openMusicFolderDialog(); // Kein await nötig
-    });
+    // Ordnerauswahl
+    if (openFolderButton) {
+        openFolderButton.addEventListener('click', () => {
+            console.log("Öffne Ordnerauswahl-Dialog...");
+            errorMessageElement.textContent = ''; // Alte Fehler löschen
+            // Ruft die Funktion im Main-Prozess auf
+            window.electronAPI.openMusicFolderDialog();
+            // Die Liste wird über den 'onMusicFolderSelected' Listener aktualisiert
+        });
+    } else {
+         console.error("Button 'openFolderButton' nicht gefunden!");
+    }
 
-    // Initialer Zustand
-     leereListe.style.display = 'block';
-     songList.innerHTML = '';
-     progressBar.value = 0;
+    // Listener für Bestätigung der Ordnerauswahl vom Main-Prozess
+    if (window.electronAPI && typeof window.electronAPI.onMusicFolderSelected === 'function') {
+        window.electronAPI.onMusicFolderSelected(() => {
+            console.log("Main-Prozess hat Ordnerauswahl bestätigt. Lade Songliste neu.");
+            // Wichtig: Nach Ordnerauswahl die Songliste neu laden
+            fetchAndDisplaySongs();
+            // Optional: Player zurücksetzen
+            stopTrack();
+            currentTrackIndex = -1;
+            if (songListElement) songListElement.innerHTML = '';
+            leereListeElement.style.display = 'block';
+            leereListeElement.textContent = 'Lade Liste...';
+        });
+    } else {
+        console.error("Fehler: window.electronAPI.onMusicFolderSelected ist nicht verfügbar! Wurde preload.js korrekt geladen?");
+         errorMessageElement.textContent = "Fehler: Verbindung zum Backend fehlt.";
+    }
+
+
+    // --- Initialisierung beim Laden der Seite ---
+    console.log("DOM geladen. Initialisiere Player.");
+    // Setze initiale Lautstärke
+    updateVolume();
+    // Versuche, die Songliste initial zu laden (falls schon ein Ordner im Backend gesetzt ist)
+    fetchAndDisplaySongs();
+    // Stelle sicher, dass der Platzhalter korrekt angezeigt wird, falls fetch fehlschlägt
+    if (tracks.length === 0) {
+        leereListeElement.style.display = 'block';
+        leereListeElement.textContent = 'Bitte Ordner wählen.';
+         nowPlayingElement.textContent = 'Nichts ausgewählt';
+    }
 
 }); // Ende DOMContentLoaded
