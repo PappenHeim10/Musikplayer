@@ -54,7 +54,6 @@ Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermög
 *   **Nur MP3:** Derzeit werden nur MP3-Dateien unterstützt.
 *   **Keine Playlist-Funktion:** Es gibt noch keine Möglichkeit, Playlists zu erstellen oder zu verwalten.
 *   **Keine Metadaten:** Es werden keine Metadaten (z.B. Künstler, Album) angezeigt.
-* **Keine Lautstärkeregelung:** Es gibt noch keine Lautstärkeregelung.
 * **Keine Suche:** Es gibt noch keine Suchfunktion.
 * **Keine Shuffle/Repeat:** Es gibt noch keine Shuffle oder Repeat Funktion.
 * **Einfache Oberfläche:** Die Benutzeroberfläche ist noch sehr einfach gehalten.
