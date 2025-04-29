@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", function () {
             currentTrackIndex = index;
 
             // UI aktualisieren
-            nowPlayingElement.textContent = `Geladen: ${filename}`;
+            nowPlayingElement.textContent = `${filename}`;
             updateSongListHighlight();
 
         } else {

@@ -1,17 +1,19 @@
-// index.js (Korrigierte Version)
-
+// --- Importiere benötigte Module ---
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http'); // HTTP-Modul importieren
-const url = require('url'); // Für URL-Parsing
+const url = require('url'); //NOTE: Für URL-Parsing
 
-// Korrekter Variablenname für den ausgewählten Ordner
-let selectedMusicDirectory = null;
-const PORT = 3001; // Port für den lokalen Server
 
-// --- HTTP Server erstellen (Dein Server-Code ist hier größtenteils korrekt) ---
-const server = http.createServer(async (req, res) => {
+
+let selectedMusicDirectory = null; // Variable für den Musikordner
+const PORT = 3001; // Dieser Port wird für den HTTP-Server verwendet
+
+// --- HTTP Server erstellen ---
+const server = http.createServer(async (req, res) => { // ich kann mit der Funktion Create Server ein Server erstellen, der auf Anfragen reagiert
+    
+    //NOTE: URL-Parsing
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
     console.log(`[Server] Anfrage empfangen: ${req.method} ${pathname}`);
