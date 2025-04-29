@@ -2,36 +2,25 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src http://localhost:3000;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' safe-file:;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <title>Electron Musik Player</title>
 </head>
 <body>
-
     <h1>Meine Musik</h1>
     <div id="songList">
         <p id="leereSongListe">Lade Songliste...</p>
         <ul>
             </ul>
     </div>
-     <div id="errorMessage"></div>
-
-    <div id="player">
+    <div id="errorMessage" style="color: red;"></div> <div id="player">
         <h2>Player</h2>
         <div id="nowPlaying">Nichts ausgewählt</div>
-        <audio id="audioPlayer" controls style="width: 100%;">
-            <source id="audioSource" src="" type="audio/mpeg">
-            Ihr Browser unterstützt das Audio-Element nicht.
-        </audio>
-    </div>
-    <button id="nextSong">Next</button>
-    <button id="playButton">Play</button>
-    <button id="previousSong">Back</button>
-    <button id="stopTrackButton">Stop</button>
-    <div id="progressBar"></div>
-    <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="0.5">
-    <label for="volumeControl">Lautstärke</label>
+        </div>
+    <button id="prevButton">Back</button> <button id="playButton">Play</button>
+    <button id="nextButton">Next</button> <button id="stopTrackButton">Stop</button> <input type="range" id="progressBar" value="0" step="0.1" style="width: 80%;"><br> <input type="range" id="volumeControl" min="0" max="1" step="0.05" value="0.5">
+    <label for="volumeControl">Lautstärke</label><br>
     <button id="openFolderButton">Ordner Wählen</button>
     <script src="script.js"></script>
 </body>
