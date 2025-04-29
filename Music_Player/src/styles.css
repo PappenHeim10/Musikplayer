@@ -1,51 +1,331 @@
+/* styles.css */
+
+/* --- Globale Styles & Variablen --- */
+:root {
+  /* Farbpalette definieren für einfache Änderungen */
+  --background-color: #1f1f1f; /* Dunkler Hintergrund */
+  --surface-color: #2d2d2d;    /* Etwas hellerer Hintergrund für Elemente */
+  --primary-color: #00bcd4;     /* Akzentfarbe (Türkis/Cyan) */
+  --primary-hover-color: #0097a7; /* Dunklere Akzentfarbe für Hover-Effekte */
+  --text-color: #e0e0e0;         /* Helle Textfarbe */
+  --text-secondary-color: #aaaaaa; /* Sekundäre Textfarbe (etwas dunkler) */
+  --border-color: #444444;       /* Farbe für Trennlinien */
+  --error-color: #f44336;        /* Fehlerfarbe (Rot) */
+  --scrollbar-thumb-color: #555;
+  --scrollbar-track-color: var(--surface-color);
+  --active-song-bg: var(--primary-color);
+  --active-song-text: #111; /* Dunkler Text für aktiven Song */
+}
+
+/* Grundlegende Resets und Body-Styling */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Sorgt dafür, dass Padding/Border in der Elementbreite/-höhe enthalten sind */
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
-  margin: auto;
-  max-width: 38rem;
-  padding: 2rem;
-}
-
-footer{
-  margin-bottom: auto;
-  display: flex;
-  justify-content: space-between;
-  flex-direction: row;
-  font-size: x-small;
-}
-
-footer div{
-  display: flex;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+               Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; /* Moderne Schriftart-Auswahl */
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  padding: 20px; /* Etwas Abstand zum Fensterrand */
+  display: flex; /* Flexbox für Zentrierung und Struktur */
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* Zentriert den Inhalt horizontal */
+  min-height: 100vh; /* Nimmt mindestens die volle Höhe ein */
+}
+
+/* Container für den gesamten Player-Inhalt, begrenzt die maximale Breite */
+.container {
+  width: 100%;
+  max-width: 800px; /* Maximale Breite auf größeren Bildschirmen */
+  background-color: var(--surface-color); /* Hintergrund für den Hauptcontainer */
+  padding: 25px;
+  border-radius: 12px; /* Abgerundete Ecken */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Dezenter Schatten */
+}
+
+/* --- Header --- */
+h1 {
+  text-align: center;
+  color: var(--primary-color);
+  margin-bottom: 30px;
+  font-size: 2.2em;
+  font-weight: 300; /* Leichtere Schriftstärke */
+}
+
+/* --- Song Liste --- */
+#songList {
+  background-color: var(--background-color); /* Dunklerer Hintergrund für die Liste */
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  max-height: 350px; /* Maximale Höhe, bevor Scrollen nötig wird */
+  overflow-y: auto; /* Vertikales Scrollen, falls Inhalt überläuft */
+  border: 1px solid var(--border-color);
+}
+
+#songList ul {
+  list-style: none; /* Keine Aufzählungszeichen */
+}
+
+#songList li {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Sanfter Übergang für Hover/Active */
+  font-size: 0.95em;
+}
+
+#songList li:last-child {
+  border-bottom: none; /* Keine Linie beim letzten Element */
+}
+
+#songList li:hover {
+  background-color: rgba(255, 255, 255, 0.05); /* Leichter Highlight-Effekt beim Hovern */
+}
+
+/* Styling für den aktuell ausgewählten/spielenden Song (Klasse muss via JS hinzugefügt werden) */
+#songList li.active {
+  background-color: var(--active-song-bg);
+  color: var(--active-song-text);
+  font-weight: bold;
+}
+
+#leereSongListe {
+  text-align: center;
+  color: var(--text-secondary-color);
+  font-style: italic;
+  padding: 20px;
+}
+
+/* --- Fehlermeldung --- */
+#errorMessage {
+  text-align: center;
+  margin-bottom: 15px;
+  font-weight: bold;
+  color: var(--error-color);
+  min-height: 1.2em; /* Verhindert Layout-Sprünge, wenn leer */
+  padding: 5px;
+}
+
+/* --- Player Sektion --- */
+#player {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  /* Hintergrund nicht unbedingt nötig, da es im .container ist */
 }
 
 
-.btns{
-  background-color: azure;
+#nowPlaying {
+  font-size: 1.1em;
+  margin-bottom: 25px;
+  min-height: 1.3em; /* Verhindert Layout-Sprünge */
+  font-weight: bold;
+  color: #fff; /* Heller für bessere Sichtbarkeit */
+  padding: 5px;
+  background-color: rgba(0,0,0,0.2); /* Leichter Hintergrund zur Abhebung */
+  border-radius: 4px;
+  display: inline-block; /* Passt sich der Textlänge an */
+  max-width: 90%; /* Verhindert Überlaufen bei langen Titeln */
+  white-space: nowrap; /* Verhindert Zeilenumbruch */
+  overflow: hidden; /* Schneidet überstehenden Text ab */
+  text-overflow: ellipsis; /* Fügt "..." hinzu, wenn Text abgeschnitten wird */
+}
+
+/* --- Steuerungselemente (Buttons & Slider) --- */
+
+/* Flexbox Container für die Haupt-Buttons */
+.controls-buttons {
   display: flex;
-  flex-direction: row;
-  justify-content: space-around;
+  justify-content: center;
+  align-items: center;
+  gap: 15px; /* Abstand zwischen Buttons */
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Buttons umbrechen auf kleinen Screens */
 }
 
-.btn_play{
-  background-image: url('img/play.png');
-  background-size: cover;
-  background-color: rgba(240, 248, 255, 0);
-  width: 50px;
-  height: 50px;
+button {
+  background-color: var(--primary-color);
+  color: var(--background-color); /* Dunkler Text auf hellem Button */
   border: none;
-  outline: none;
+  padding: 10px 20px;
+  border-radius: 20px; /* Stärker abgerundete Ecken für "pill" Look */
   cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-transform: uppercase; /* Großbuchstaben */
+  letter-spacing: 0.5px; /* Etwas Buchstabenabstand */
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  min-width: 80px; /* Mindestbreite für Konsistenz */
+  text-align: center;
 }
 
-.btn_pause{
-  background-image: url('img/pause.png');
-  background-size: cover;
-  background-color: rgba(240, 248, 255, 0);
-  width: 50px;
-  height: 50px;
-  border: none;
-  outline: none;
+button:hover {
+  background-color: var(--primary-hover-color);
+}
+
+button:active {
+  transform: scale(0.96); /* Leichter Klick-Effekt */
+}
+
+/* Spezielles Styling für Play-Button (optional, um ihn hervorzuheben) */
+#playButton {
+  padding: 12px 25px;
+  font-size: 1em;
+}
+
+/* Container für die Slider (Fortschritt & Lautstärke) */
+.slider-container {
+  display: flex;
+  flex-direction: column; /* Slider untereinander */
+  align-items: center; /* Zentriert die Slider */
+  gap: 15px; /* Abstand zwischen den Elementen */
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+/* Styling für Range-Inputs (Slider) */
+input[type="range"] {
+  -webkit-appearance: none; /* Standard-Look entfernen (WebKit/Blink) */
+  appearance: none; /* Standard-Look entfernen (Standard) */
+  width: 85%; /* Breite der Slider */
+  max-width: 400px; /* Maximale Breite */
+  height: 8px; /* Höhe der Track-Leiste */
+  background: var(--border-color); /* Hintergrund der Track-Leiste */
+  border-radius: 5px; /* Abgerundete Ecken für die Leiste */
   cursor: pointer;
-};
+  outline: none; /* Kein Fokus-Rahmen */
+  transition: opacity 0.2s ease-in-out;
+}
+input[type="range"]:hover {
+  opacity: 0.9; /* Leichte Transparenz beim Hovern */
+}
+
+/* Styling für den Schieberegler (Thumb) - WebKit/Blink */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; /* Breite des Reglers */
+  height: 18px; /* Höhe des Reglers */
+  background: var(--primary-color); /* Akzentfarbe für den Regler */
+  border-radius: 50%; /* Kreisrunder Regler */
+  cursor: pointer;
+  border: 2px solid var(--surface-color); /* Kleiner Rand, um ihn vom Track abzuheben */
+  transition: background-color 0.2s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+   background: var(--primary-hover-color);
+}
+
+
+/* Styling für den Schieberegler (Thumb) - Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 16px; /* Breite des Reglers (ggf. anpassen) */
+  height: 16px; /* Höhe des Reglers (ggf. anpassen) */
+  background: var(--primary-color); /* Akzentfarbe */
+  border-radius: 50%; /* Kreisrund */
+  cursor: pointer;
+  border: 2px solid var(--surface-color); /* Rand */
+  transition: background-color 0.2s ease;
+}
+input[type="range"]::-moz-range-thumb:hover {
+   background: var(--primary-hover-color);
+}
+
+
+/* Label für Lautstärke */
+label[for="volumeControl"] {
+  font-size: 0.9em;
+  color: var(--text-secondary-color);
+  margin-top: -10px; /* Etwas näher an den Slider rücken */
+}
+
+/* Ordner-Wählen Button (etwas anders gestyled) */
+#openFolderButton {
+  display: block; /* Als Block-Element */
+  margin: 15px auto 0 auto; /* Oben Abstand, zentriert */
+  background-color: var(--text-secondary-color); /* Dezentere Farbe */
+  color: var(--background-color);
+}
+#openFolderButton:hover {
+  background-color: #bdbdbd; /* Heller beim Hovern */
+}
+
+/* --- Scrollbar Styling (optional, für Webkit-Browser) --- */
+#songList::-webkit-scrollbar {
+  width: 8px; /* Breite der Scrollbar */
+}
+
+#songList::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color); /* Hintergrund der Scroll-Leiste */
+  border-radius: 4px;
+}
+
+#songList::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb-color); /* Farbe des Scroll-Reglers */
+  border-radius: 4px; /* Abrundung des Reglers */
+  border: 2px solid var(--scrollbar-track-color); /* Rand um den Regler */
+}
+#songList::-webkit-scrollbar-thumb:hover {
+  background-color: #777; /* Heller beim Hovern */
+}
+
+
+/* --- Responsivität --- */
+@media (max-width: 600px) {
+  body {
+      padding: 10px; /* Weniger Padding auf kleinen Screens */
+  }
+
+  .container {
+      padding: 15px; /* Weniger Padding im Container */
+      border-radius: 8px;
+  }
+
+  h1 {
+      font-size: 1.8em; /* Kleinere Überschrift */
+      margin-bottom: 20px;
+  }
+
+  #songList {
+      max-height: 250px; /* Etwas geringere Höhe für die Liste */
+  }
+
+  .controls-buttons {
+      gap: 10px; /* Weniger Abstand zwischen Buttons */
+  }
+
+  button {
+      padding: 8px 15px; /* Kleinere Buttons */
+      font-size: 0.85em;
+      min-width: 70px;
+  }
+  #playButton {
+      padding: 10px 20px;
+      font-size: 0.9em;
+  }
+
+  input[type="range"] {
+      width: 95%; /* Slider nehmen fast die volle Breite ein */
+  }
+
+  #nowPlaying {
+      font-size: 1em;
+  }
+}
+
+@media (max-width: 400px) {
+   h1 {
+       font-size: 1.6em;
+   }
+   /* Evtl. Buttons noch kleiner machen oder untereinander anordnen,
+      falls sie auf sehr schmalen Geräten nicht mehr gut passen */
+   .controls-buttons {
+      /* Evtl. flex-direction: column; wenn nötig */
+   }
+}

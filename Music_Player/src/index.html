@@ -3,24 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>Electron Musik Player</title>
+    <link rel="stylesheet" href="styles.css"> <title>Electron Musik Player</title>
 </head>
 <body>
     <h1>Meine Musik</h1>
+    
     <div id="songList">
         <p id="leereSongListe">Lade Songliste...</p>
-        <ul>
-            </ul>
+        <ul> </ul>
     </div>
+
     <div id="errorMessage" style="color: red;"></div> <div id="player">
-        <h2>Player</h2>
         <div id="nowPlaying">Nichts ausgewählt</div>
+    </div>
+
+    <div class="controlls">
+        <button id="prevButton">Back</button>
+        <button id="playButton">Play</button>
+        <button id="nextButton">Next</button>
+        <button id="stopTrackButton">Stop</button>
+    </div>
+
+    <div class="progressBars">
+        <div class="progressBarDuration">
+            <input type="range" id="progressBar" value="0" step="0.1">
         </div>
-    <button id="prevButton">Back</button> <button id="playButton">Play</button>
-    <button id="nextButton">Next</button> <button id="stopTrackButton">Stop</button> <input type="range" id="progressBar" value="0" step="0.1" style="width: 80%;"><br> <input type="range" id="volumeControl" min="0" max="1" step="0.05" value="0.5">
-    <label for="volumeControl">Lautstärke</label><br>
+        <div class="progressBarVolume">
+            <label for="volumeControl">Lautstärke</label><br>
+            <input type="range" id="volumeControl" min="0" max="1" step="0.05" value="0.5">
+        </div>
+    </div>
+
     <button id="openFolderButton">Ordner Wählen</button>
+
     <script src="script.js"></script>
 </body>
 </html>

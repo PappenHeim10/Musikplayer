@@ -1,43 +1,81 @@
-# Musikplayer-Projekt
+# Musikplayer (Electron)
 
 ## Beschreibung
 
-Dieses Projekt ist ein in Entwicklung befindlicher Musikplayer.  Ziel ist es, eine benutzerfreundliche Anwendung zu erstellen, mit der Benutzer ihre Musikbibliothek verwalten und ihre Lieblingssongs abspielen können.  Derzeit befindet sich die Anwendung noch im Aufbau, aber es sind regelmäßige Updates und neue Funktionen geplant.
+Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermöglicht es Benutzern, Musikdateien aus einem ausgewählten Ordner abzuspielen. Das Projekt befindet sich noch in der Entwicklung, aber die grundlegende Musikwiedergabe ist bereits implementiert.
 
-## Funktionen (Geplant/In Entwicklung)
+## Funktionen
 
-*   **Musikwiedergabe:** Abspielen von Musikdateien in gängigen Formaten (z.B. MP3, WAV, FLAC).
-*   **Playlist-Verwaltung:** Erstellen, Bearbeiten und Verwalten von Wiedergabelisten.
-*   **Musikbibliothek:** Durchsuchen und Verwalten der lokalen Musikbibliothek.
-*   **Metadaten-Anzeige:** Anzeigen von Informationen wie Titel, Künstler, Album und Genre.
-*   **Wiedergabesteuerung:** Steuerung der Wiedergabe (Play, Pause, Stop, Nächster Titel, Vorheriger Titel).
-*   **Lautstärkeregelung:** Anpassen der Lautstärke.
-*   **Zufallswiedergabe (Shuffle):** Zufälliges Abspielen von Titeln.
-*   **Wiederholung (Repeat):** Wiederholen eines einzelnen Titels oder einer ganzen Playlist.
-* **Suche:** Suche nach Titeln, Künstlern oder Alben.
-* **Benutzerfreundliche Oberfläche:** Einfache und intuitive Bedienung.
+*   **Ordnerauswahl:** Benutzer können einen Ordner auswählen, der ihre Musikdateien enthält.
+*   **Musikwiedergabe:** MP3-Dateien aus dem ausgewählten Ordner können abgespielt werden.
+*   **Wiedergabesteuerung:**
+    *   Play/Pause
+    *   Nächster Titel
+    *   Vorheriger Titel
+*   **Titelliste:** Anzeige der verfügbaren Titel im ausgewählten Ordner.
+*   **Aktueller Titel:** Anzeige des aktuell abgespielten Titels.
+* **Fehlermeldungen:** Anzeige von Fehlermeldungen, falls ein Track nicht geladen werden kann.
 
 ## Technologie
 
-*   **Electron:** Die Anwendung wird mit Electron entwickelt, um eine plattformübergreifende Kompatibilität zu gewährleisten.
-*   **[Weitere Technologien]:** Hier können weitere verwendete Technologien wie z.B. JavaScript-Frameworks, Bibliotheken, etc. aufgeführt werden.
+*   **Electron:** Ermöglicht die Erstellung einer plattformübergreifenden Desktop-Anwendung mit Webtechnologien.
+*   **Node.js:** Wird für den Zugriff auf das Dateisystem und die Kommunikation zwischen Haupt- und Renderer-Prozess verwendet.
+*   **JavaScript:** Die Hauptprogrammiersprache für die Logik und die Benutzeroberfläche.
+*   **HTML/CSS:** Für die Struktur und das Styling der Benutzeroberfläche.
+* **`safe-file://` Protokoll:** Ein benutzerdefiniertes Protokoll, um den Zugriff auf lokale Dateien zu sichern.
 
-## Installation
+## Installation und Ausführung
 
-Da sich das Projekt noch in der Entwicklung befindet, ist derzeit keine offizielle Installationsmethode verfügbar.  Sobald eine erste Version veröffentlicht wird, werden hier detaillierte Installationsanweisungen bereitgestellt.
+1.  **Voraussetzungen:**
+    *   Node.js und npm müssen auf deinem System installiert sein.
+    *   Electron muss installiert sein.
+2.  **Klonen des Repositories:**
+    ```bash
+    git clone [URL des Repositories]
+    cd [Name des Ordners]
+    ```
+3.  **Installation der Abhängigkeiten:**
+    ```bash
+    npm install
+    ```
+4.  **Starten der Anwendung:**
+    ```bash
+    npm start
+    ```
 
-## Zukünftige Updates
+## Bedienung
 
-Es sind regelmäßige Updates geplant, um neue Funktionen hinzuzufügen, Fehler zu beheben und die Benutzerfreundlichkeit zu verbessern.  Folgende Features sind für zukünftige Versionen geplant:
+1.  **Ordner auswählen:** Klicke auf die Schaltfläche "Ordner auswählen", um den Ordner mit deinen Musikdateien auszuwählen.
+2.  **Musik abspielen:** Die verfügbaren Titel werden in der Titelliste angezeigt. Klicke auf einen Titel, um ihn abzuspielen.
+3.  **Wiedergabe steuern:** Verwende die Play/Pause-, Nächster Titel- und Vorheriger Titel-Schaltflächen, um die Wiedergabe zu steuern.
 
-*   **[Feature 1]:** Beschreibung des geplanten Features.
-*   **[Feature 2]:** Beschreibung des geplanten Features.
-*   **[Feature 3]:** Beschreibung des geplanten Features.
-* ...
+## Bekannte Einschränkungen
+
+*   **Nur MP3:** Derzeit werden nur MP3-Dateien unterstützt.
+*   **Keine Playlist-Funktion:** Es gibt noch keine Möglichkeit, Playlists zu erstellen oder zu verwalten.
+*   **Keine Metadaten:** Es werden keine Metadaten (z.B. Künstler, Album) angezeigt.
+* **Keine Lautstärkeregelung:** Es gibt noch keine Lautstärkeregelung.
+* **Keine Suche:** Es gibt noch keine Suchfunktion.
+* **Keine Shuffle/Repeat:** Es gibt noch keine Shuffle oder Repeat Funktion.
+* **Einfache Oberfläche:** Die Benutzeroberfläche ist noch sehr einfach gehalten.
+
+## Zukünftige Entwicklung
+
+Die folgenden Funktionen sind für zukünftige Versionen geplant:
+
+*   Unterstützung für weitere Audioformate (z.B. WAV, FLAC).
+*   Playlist-Verwaltung.
+*   Anzeige von Metadaten.
+*   Lautstärkeregelung.
+*   Zufallswiedergabe (Shuffle).
+*   Wiederholung (Repeat).
+*   Suchfunktion.
+*   Verbesserung der Benutzeroberfläche.
+*   Weitere Fehlerbehebungen und Optimierungen.
 
 ## Mitwirken
 
-Wenn du Interesse hast, an diesem Projekt mitzuwirken, kannst du dich gerne melden!  Jede Hilfe ist willkommen.
+Beiträge zu diesem Projekt sind willkommen! Wenn du Fehler findest oder Verbesserungsvorschläge hast, erstelle bitte ein Issue oder einen Pull Request.
 
 ## Kontakt
 
