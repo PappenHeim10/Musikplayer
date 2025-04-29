@@ -1,82 +1,78 @@
-const { app, BrowserWindow, dialog} = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
-const fs = require('fs'); // File system module hinzufügen
+const fs = require('fs');
 
-
-
-
-//Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
 const createWindow = () => {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-
-      nodeIntegration: true,
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
   const selectMusicFolder = async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory'],
-    });
-  }
-
-  const getMusicFiles = async (directory) => { // Asynchronische Funktion die die Musikdateien aus dem angegebenen Verzeichnis liest
     try {
-    const files = await fs.promises.readdir(directory);
-    const musicFiles = files.filter(file => path.extname(file).toLowerCase() === '.mp3');
-    return musicFiles;
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+        title: 'Musikordner auswählen',
+      });
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        const selectedDirectory = result.filePaths[0];
+        console.log('Ausgewählter Ordner:', selectedDirectory);
+        const musicFiles = await getMusicFiles(selectedDirectory);
+        console.log("Musikdateien:", musicFiles);
+        mainWindow.webContents.send('music-files', { musicFiles, selectedDirectory });
+      } else {
+        console.log('Kein Ordner ausgewählt oder Dialog abgebrochen.');
+      }
     } catch (err) {
-    console.error('Fehler beim Lesen des Musikordners:', err);
-    return [];
+      console.error('Fehler beim Anzeigen des Dialogs:', err);
     }
   };
 
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  const getMusicFiles = async (directory) => {
+    try {
+      const files = await fs.promises.readdir(directory);
+      const musicFiles = files.filter(file => path.extname(file).toLowerCase() === '.mp3');
+      return musicFiles;
+    } catch (err) {
+      console.error('Fehler beim Lesen des Musikordners:', err);
+      return [];
+    }
+  };
 
-  // Open the DevTools.
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
   mainWindow.webContents.openDevTools();
+
+  //mainWindow.webContents.on('did-finish-load', () => {
+  //  selectMusicFolder(); // Entfernt: Dialog wird jetzt nur auf Button-Klick geöffnet
+  //});
 };
 
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
 
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+
+  ipcMain.handle('open-music-folder-dialog', async () => {
+    await selectMusicFolder();
+  });
 });
 
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
-
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
-
-
-
-
-

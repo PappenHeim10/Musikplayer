@@ -11,7 +11,7 @@
 
     <h1>Meine Musik</h1>
     <div id="songList">
-        <p>Lade Songliste...</p>
+        <p id="leereSongListe">Lade Songliste...</p>
         <ul>
             </ul>
     </div>
@@ -28,6 +28,11 @@
     <button id="nextSong">Next</button>
     <button id="playButton">Play</button>
     <button id="previousSong">Back</button>
+    <button id="stopTrackButton">Stop</button>
+    <div id="progressBar"></div>
+    <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="0.5">
+    <label for="volumeControl">Lautstärke</label>
+    <button id="openFolderButton">Ordner Wählen</button>
     <script src="script.js"></script>
 </body>
 </html>
