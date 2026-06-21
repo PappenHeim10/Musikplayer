@@ -31,7 +31,7 @@ Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermög
     *   Electron muss installiert sein.
 2.  **Klonen des Repositories:**
     ```bash
-    git clone [URL des Repositories]
+    git clone https://github.com/PappenHeim10/Musikplayer
     cd [Name des Ordners]
     ```
 3.  **Installation der Abhängigkeiten:**
