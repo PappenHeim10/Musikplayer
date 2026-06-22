@@ -13,6 +13,18 @@ const fs = require('fs');
 const url = require('url');
 
 /**
+ * Erlaubte CORS-Origins. Der Electron-Renderer lädt via file:// und sendet
+ * daher den Origin "null". Echte Web-Origins (https://…, http://…) werden
+ * bewusst NICHT erlaubt, damit keine fremde Webseite den laufenden Server
+ * auslesen kann.
+ * @param {string|undefined} origin - Wert des Origin-Headers.
+ * @returns {boolean}
+ */
+function isAllowedOrigin(origin) {
+    return origin === 'null' || (typeof origin === 'string' && origin.startsWith('file://'));
+}
+
+/**
  * Liest die MP3-Dateinamen (oberste Ebene) eines Ordners.
  * @param {string} directory - Absoluter Pfad zum Musikordner.
  * @returns {Promise<string[]>} Liste der Dateinamen (leer bei Fehler).
@@ -131,8 +143,15 @@ function createMusicServer(getMusicDirectory) {
         const pathname = parsedUrl.pathname;
         console.log(`[Server] Anfrage empfangen: ${req.method} ${pathname}`);
 
-        // CORS Header
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        // CORS: kein Wildcard ('*') mehr. Nur der App-eigene Renderer darf die
+        // Antworten auslesen. Da die UI per loadFile (file://) geladen wird, sendet
+        // ihr fetch den Origin "null" – genau den erlauben wir. Eine echte Webseite
+        // (https://…) im Browser bekommt keinen passenden Header und kann die
+        // Antwort (z. B. die Songliste) damit nicht auslesen.
+        const origin = req.headers.origin;
+        if (isAllowedOrigin(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+        }
 
         const musicDirectory = getMusicDirectory();
 
