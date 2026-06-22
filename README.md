@@ -122,12 +122,14 @@ npm test
 
 ## Roadmap
 
-- [ ] Metadata (artist / album / cover from ID3 tags)
-- [ ] Playlist management
-- [ ] Search / filter
-- [ ] Shuffle & repeat
-- [ ] Recursive folder scanning
+- [ ] Metadata (artist / album / cover from ID3 tags) — [#12](https://github.com/PappenHeim10/Musikplayer/issues/12)
+- [ ] Playlist management — [#13](https://github.com/PappenHeim10/Musikplayer/issues/13)
+- [ ] Search / filter — [#14](https://github.com/PappenHeim10/Musikplayer/issues/14)
+- [ ] Shuffle & repeat — [#15](https://github.com/PappenHeim10/Musikplayer/issues/15)
+- [ ] Recursive folder scanning — [#16](https://github.com/PappenHeim10/Musikplayer/issues/16)
 - [ ] ESLint setup
+
+See the [open issues](https://github.com/PappenHeim10/Musikplayer/issues) for details.
 
 ## Contributing
 
