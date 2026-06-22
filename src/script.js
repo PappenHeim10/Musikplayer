@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const progressBar = document.getElementById("progressBar");
     const currentTimeElement = document.getElementById("currentTime");
     const durationElement = document.getElementById("duration");
+    const eqBars = document.getElementById("eqBars");
     const openFolderButton = document.getElementById("openFolderButton");
     const songListElement = document.getElementById("songList")?.querySelector('ul'); // Sicherstellen, dass UL existiert
     const leereListeElement = document.getElementById("leereSongListe");
@@ -29,6 +30,27 @@ document.addEventListener("DOMContentLoaded", async function () {
     let API_BASE_URL = 'http://localhost:3001';
 
     // --- Kernfunktionen ---
+
+    /**
+     * Maskiert HTML-Sonderzeichen, damit Dateinamen sicher per innerHTML
+     * eingefügt werden können (z. B. ein "&" oder "<" im Namen).
+     * @param {string} text
+     * @returns {string}
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Setzt die Amber-Füllung eines Pegel-Sliders (CSS-Variable --val).
+     * @param {HTMLElement} meter
+     * @param {number} percent - 0..100
+     */
+    function setMeterFill(meter, percent) {
+        if (meter) meter.style.setProperty('--val', `${Math.max(0, Math.min(100, percent))}%`);
+    }
 
     /**
      * Lädt die Songliste von der lokalen API und aktualisiert die UI.
@@ -66,15 +88,16 @@ document.addEventListener("DOMContentLoaded", async function () {
                 // Liste mit Dateinamen füllen
                 if (songListElement) {
                     songListElement.innerHTML = tracks.map((filename, index) => {
-                        // Einfacher Dateiname ohne Pfad wird angezeigt
-                        return `<li data-index="${index}">${filename}</li>`;
+                        // Track-Nummer (Position) + Dateiname; Name wird maskiert
+                        const no = String(index + 1).padStart(2, '0');
+                        return `<li data-index="${index}"><span class="track__no">${no}</span><span class="track__name">${escapeHtml(filename)}</span></li>`;
                     }).join('');
                     setupSongListClick(); // Klick-Listener für die Liste aktivieren
                 }
                  // Ersten Track laden (optional, ohne Autoplay)
                  // loadTrack(0);
             } else {
-                 leereListeElement.textContent = 'Keine MP3s im Ordner gefunden.';
+                 leereListeElement.textContent = 'Keine Audiodateien im Ordner.';
                  nowPlayingElement.textContent = 'Keine Songs';
             }
 
@@ -139,9 +162,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                     console.error("Fehler beim Starten der Wiedergabe:", error);
                     errorMessageElement.textContent = `Fehler: ${error.message}`;
                     isPlaying = false; // Sicherstellen, dass der Status korrekt ist
-                    playButton.textContent = "Play";
-                    playButton.classList.remove("playing");
-                    playButton.classList.add("pausing");
+                    playButton.textContent = "▶";
+                    playButton.setAttribute("aria-label", "Abspielen");
+                    if (eqBars) eqBars.classList.remove("eq--on");
                 });
             }
         }
@@ -227,6 +250,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     function updateVolume() {
         if (volumeSlider) {
             audio.volume = volumeSlider.value;
+            setMeterFill(volumeSlider, volumeSlider.value * 100);
         }
     }
 
@@ -243,15 +267,17 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     /**
-     * Aktualisiert den Fortschrittsbalken und die Zeitanzeige anhand der
-     * aktuellen Wiedergabezeit.
+     * Aktualisiert den Fortschrittsbalken (inkl. Amber-Füllung) und die
+     * Zeitanzeige anhand der aktuellen Wiedergabezeit.
      */
     function updateProgressBar() {
+        let value = 0;
         if (progressBar && audio.duration) { // Nur wenn Dauer bekannt ist
-            const value = (audio.currentTime / audio.duration) * 100;
-            progressBar.value = value || 0;
-        } else if (progressBar) {
-            progressBar.value = 0; // Zurücksetzen, wenn keine Dauer
+            value = (audio.currentTime / audio.duration) * 100 || 0;
+        }
+        if (progressBar) {
+            progressBar.value = value;
+            setMeterFill(progressBar, value);
         }
         if (currentTimeElement) {
             currentTimeElement.textContent = formatTime(audio.currentTime);
@@ -266,6 +292,7 @@ document.addEventListener("DOMContentLoaded", async function () {
              const time = (progressBar.value / 100) * audio.duration;
              audio.currentTime = time;
          }
+         if (progressBar) setMeterFill(progressBar, progressBar.value);
      }
 
 
@@ -297,13 +324,7 @@ document.addEventListener("DOMContentLoaded", async function () {
          if (!songListElement) return;
          const listItems = songListElement.querySelectorAll('li');
          listItems.forEach((item, index) => {
-             if (index === currentTrackIndex) {
-                 item.style.fontWeight = 'bold';
-                 item.style.backgroundColor = '#e0e0e0'; // Beispiel-Hervorhebung
-             } else {
-                 item.style.fontWeight = 'normal';
-                 item.style.backgroundColor = '';
-             }
+             item.classList.toggle('active', index === currentTrackIndex);
          });
      }
 
@@ -350,17 +371,17 @@ document.addEventListener("DOMContentLoaded", async function () {
     // Audio Element Events
     audio.addEventListener("play", () => {
         isPlaying = true;
-        playButton.textContent = "Pause";
-        playButton.classList.remove("pausing");
-        playButton.classList.add("playing");
+        playButton.textContent = "⏸";
+        playButton.setAttribute("aria-label", "Pausieren");
+        if (eqBars) eqBars.classList.add("eq--on");
         console.log("Event: play");
     });
 
     audio.addEventListener("pause", () => {
         isPlaying = false;
-        playButton.textContent = "Play";
-        playButton.classList.remove("playing");
-        playButton.classList.add("pausing");
+        playButton.textContent = "▶";
+        playButton.setAttribute("aria-label", "Abspielen");
+        if (eqBars) eqBars.classList.remove("eq--on");
         console.log("Event: pause");
     });
 
@@ -397,7 +418,7 @@ document.addEventListener("DOMContentLoaded", async function () {
          console.log("Event: loadstart");
          errorMessageElement.textContent = ''; // Fehler löschen beim Starten eines neuen Ladevorgangs
           // Setze Progressbar und Zeitanzeige zurück, während geladen wird
-          if (progressBar) progressBar.value = 0;
+          if (progressBar) { progressBar.value = 0; setMeterFill(progressBar, 0); }
           if (currentTimeElement) currentTimeElement.textContent = '0:00';
           if (durationElement) durationElement.textContent = '0:00';
      });
