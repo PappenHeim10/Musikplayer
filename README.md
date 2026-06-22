@@ -7,7 +7,7 @@ Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermög
 ## Funktionen
 
 *   **Ordnerauswahl:** Benutzer können einen Ordner auswählen, der ihre Musikdateien enthält.
-*   **Musikwiedergabe:** MP3-Dateien aus dem ausgewählten Ordner können abgespielt werden.
+*   **Musikwiedergabe:** Audiodateien aus dem ausgewählten Ordner können abgespielt werden (MP3, WAV, FLAC, OGG/Opus, M4A, AAC).
 *   **Wiedergabesteuerung:**
     *   Play/Pause
     *   Nächster Titel
@@ -51,7 +51,6 @@ Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermög
 
 ## Bekannte Einschränkungen
 
-*   **Nur MP3:** Derzeit werden nur MP3-Dateien unterstützt.
 *   **Keine Playlist-Funktion:** Es gibt noch keine Möglichkeit, Playlists zu erstellen oder zu verwalten.
 *   **Keine Metadaten:** Es werden keine Metadaten (z.B. Künstler, Album) angezeigt.
 * **Keine Suche:** Es gibt noch keine Suchfunktion.
@@ -62,7 +61,6 @@ Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermög
 
 Die folgenden Funktionen sind für zukünftige Versionen geplant:
 
-*   Unterstützung für weitere Audioformate (z.B. WAV, FLAC).
 *   Playlist-Verwaltung.
 *   Anzeige von Metadaten.
 *   Zufallswiedergabe (Shuffle).
