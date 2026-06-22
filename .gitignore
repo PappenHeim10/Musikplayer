@@ -93,3 +93,7 @@ typings/
 
 # Electron-Forge
 out/
+
+# all files neccessary for AI development
+CLAUDE.md
+
