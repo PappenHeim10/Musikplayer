@@ -4,18 +4,46 @@ const path = require('path');
 const { createMusicServer } = require('./server'); // HTTP-Server (ausgelagert)
 
 let selectedMusicDirectory = null; // Variable für den Musikordner
-const PORT = 3001; // Dieser Port wird für den HTTP-Server verwendet
+const PREFERRED_PORT = 3001; // Bevorzugter Port; bei Belegung wird ausgewichen
+let apiPort = null; // Der tatsächlich vergebene Port (steht erst nach 'listening' fest)
 
 // --- HTTP Server erstellen & starten ---
 // Der Server liest den aktuellen Ordner stets frisch über den Getter, da sich
 // selectedMusicDirectory zur Laufzeit per Ordnerauswahl ändert.
 const server = createMusicServer(() => selectedMusicDirectory);
 
-// Nur an 127.0.0.1 binden: der Server ist ausschließlich für den eigenen
-// Renderer gedacht und soll nicht über andere Netzwerk-Interfaces erreichbar sein.
-server.listen(PORT, '127.0.0.1', () => {
-    console.log(`[Server] Lokaler HTTP-Server läuft auf http://localhost:${PORT}`);
-});
+/**
+ * Startet den HTTP-Server. Versucht zuerst den bevorzugten Port; ist dieser
+ * belegt (EADDRINUSE), weicht er auf einen vom Betriebssystem vergebenen freien
+ * Port aus (Port 0). Bindet nur an 127.0.0.1, damit der Server nicht über andere
+ * Netzwerk-Interfaces erreichbar ist.
+ * @returns {Promise<number>} Der tatsächlich gebundene Port.
+ */
+function startServer() {
+    let triedFallback = false;
+    return new Promise((resolve, reject) => {
+        server.on('listening', () => {
+            apiPort = server.address().port;
+            console.log(`[Server] Lokaler HTTP-Server läuft auf http://localhost:${apiPort}`);
+            resolve(apiPort);
+        });
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE' && !triedFallback) {
+                triedFallback = true;
+                console.warn(`[Server] Port ${PREFERRED_PORT} ist belegt – weiche auf einen freien Port aus.`);
+                server.listen(0, '127.0.0.1');
+            } else {
+                console.error('[Server] Konnte nicht starten:', err);
+                reject(err);
+            }
+        });
+        server.listen(PREFERRED_PORT, '127.0.0.1');
+    });
+}
+
+// Promise, das auflöst, sobald der Server lauscht – der Renderer fragt darüber
+// den Port ab und bekommt so immer einen gültigen Wert (auch beim Fallback).
+const serverReady = startServer();
 
 // --- Squirrel Startup Check ---
 if (require('electron-squirrel-startup')) {
@@ -49,6 +77,11 @@ app.whenReady().then(() => {
             createWindow();
         }
     });
+
+    // --- IPC Handler: API-Port abfragen ---
+    // Wartet auf serverReady, damit der Renderer immer den tatsächlichen Port
+    // erhält – auch wenn auf einen Ausweich-Port gewechselt wurde.
+    ipcMain.handle('get-api-port', () => serverReady);
 
     // --- IPC Handler für Ordnerauswahl KORRIGIERT ---
     ipcMain.handle('open-music-folder-dialog', async (event) => {
