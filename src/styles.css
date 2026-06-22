@@ -230,6 +230,23 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 
+/* Zeitanzeige (aktuelle Position / Gesamtdauer) unter dem Fortschrittsbalken */
+.timeDisplay {
+  text-align: center;
+  font-size: 0.85em;
+  color: var(--text-secondary-color);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums; /* verhindert Springen durch unterschiedlich breite Ziffern */
+}
+
+/* Tastatur-Hinweis unter den Steuerelementen */
+#shortcutHint {
+  text-align: center;
+  font-size: 0.8em;
+  color: var(--text-secondary-color);
+  margin-top: 20px;
+}
+
 /* Label für Lautstärke */
 label[for="volumeControl"] {
   font-size: 0.9em;

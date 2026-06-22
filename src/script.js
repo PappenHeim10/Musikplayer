@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     const stopButton = document.getElementById("stopTrackButton");
     const volumeSlider = document.getElementById("volumeControl");
     const progressBar = document.getElementById("progressBar");
+    const currentTimeElement = document.getElementById("currentTime");
+    const durationElement = document.getElementById("duration");
     const openFolderButton = document.getElementById("openFolderButton");
     const songListElement = document.getElementById("songList")?.querySelector('ul'); // Sicherstellen, dass UL existiert
     const leereListeElement = document.getElementById("leereSongListe");
@@ -199,6 +201,27 @@ document.addEventListener("DOMContentLoaded", async function () {
     // --- UI Hilfsfunktionen ---
 
     /**
+     * Formatiert eine Zeit in Sekunden als "m:ss" (z. B. 83 → "1:23").
+     * @param {number} seconds
+     * @returns {string}
+     */
+    function formatTime(seconds) {
+        if (!isFinite(seconds) || seconds < 0) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Aktualisiert die Anzeige der Gesamtdauer (sobald Metadaten geladen sind).
+     */
+    function updateDurationDisplay() {
+        if (durationElement) {
+            durationElement.textContent = formatTime(audio.duration);
+        }
+    }
+
+    /**
      * Aktualisiert die Lautstärke des Audio-Elements basierend auf dem Slider.
      */
     function updateVolume() {
@@ -208,7 +231,20 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     /**
-     * Aktualisiert den Fortschrittsbalken basierend auf der aktuellen Wiedergabezeit.
+     * Ändert die Lautstärke um `delta` (geclamped auf 0..1) und hält Slider +
+     * Audio synchron. Wird von der Tastatursteuerung genutzt.
+     * @param {number} delta
+     */
+    function changeVolume(delta) {
+        if (!volumeSlider) return;
+        const next = Math.min(1, Math.max(0, parseFloat(volumeSlider.value) + delta));
+        volumeSlider.value = next;
+        updateVolume();
+    }
+
+    /**
+     * Aktualisiert den Fortschrittsbalken und die Zeitanzeige anhand der
+     * aktuellen Wiedergabezeit.
      */
     function updateProgressBar() {
         if (progressBar && audio.duration) { // Nur wenn Dauer bekannt ist
@@ -216,6 +252,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             progressBar.value = value || 0;
         } else if (progressBar) {
             progressBar.value = 0; // Zurücksetzen, wenn keine Dauer
+        }
+        if (currentTimeElement) {
+            currentTimeElement.textContent = formatTime(audio.currentTime);
         }
     }
 
@@ -279,6 +318,35 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (volumeSlider) volumeSlider.addEventListener("input", updateVolume);
     if (progressBar) progressBar.addEventListener("input", seekTrack); // Listener für Seeking
 
+    // Tastatursteuerung: Leertaste = Play/Pause, ← / → = Zurück / Weiter,
+    // ↑ / ↓ = Lautstärke. Greift nicht, wenn ein Eingabefeld (z. B. ein Slider)
+    // fokussiert ist, damit dessen Standardverhalten erhalten bleibt.
+    document.addEventListener("keydown", (event) => {
+        if (event.target instanceof HTMLInputElement) return;
+        switch (event.code) {
+            case "Space":
+                event.preventDefault(); // verhindert Scrollen / erneutes Klicken eines fokussierten Buttons
+                togglePlayPause();
+                break;
+            case "ArrowRight":
+                event.preventDefault();
+                nextTrack();
+                break;
+            case "ArrowLeft":
+                event.preventDefault();
+                prevTrack();
+                break;
+            case "ArrowUp":
+                event.preventDefault();
+                changeVolume(0.05);
+                break;
+            case "ArrowDown":
+                event.preventDefault();
+                changeVolume(-0.05);
+                break;
+        }
+    });
+
     // Audio Element Events
     audio.addEventListener("play", () => {
         isPlaying = true;
@@ -297,6 +365,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
 
     audio.addEventListener("timeupdate", updateProgressBar);
+    // Gesamtdauer anzeigen, sobald die Metadaten geladen sind / sich ändern
+    audio.addEventListener("loadedmetadata", updateDurationDisplay);
+    audio.addEventListener("durationchange", updateDurationDisplay);
     audio.addEventListener("ended", nextTrack); // Zum nächsten Song springen, wenn einer endet
 
     audio.addEventListener("error", (e) => {
@@ -325,8 +396,10 @@ document.addEventListener("DOMContentLoaded", async function () {
          // Beginnt mit dem Laden der Ressource
          console.log("Event: loadstart");
          errorMessageElement.textContent = ''; // Fehler löschen beim Starten eines neuen Ladevorgangs
-          // Setze Progressbar zurück, während geladen wird
+          // Setze Progressbar und Zeitanzeige zurück, während geladen wird
           if (progressBar) progressBar.value = 0;
+          if (currentTimeElement) currentTimeElement.textContent = '0:00';
+          if (durationElement) durationElement.textContent = '0:00';
      });
 
     // Ordnerauswahl
