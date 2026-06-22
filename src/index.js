@@ -11,7 +11,9 @@ const PORT = 3001; // Dieser Port wird für den HTTP-Server verwendet
 // selectedMusicDirectory zur Laufzeit per Ordnerauswahl ändert.
 const server = createMusicServer(() => selectedMusicDirectory);
 
-server.listen(PORT, () => {
+// Nur an 127.0.0.1 binden: der Server ist ausschließlich für den eigenen
+// Renderer gedacht und soll nicht über andere Netzwerk-Interfaces erreichbar sein.
+server.listen(PORT, '127.0.0.1', () => {
     console.log(`[Server] Lokaler HTTP-Server läuft auf http://localhost:${PORT}`);
 });
 
@@ -32,7 +34,10 @@ const createWindow = () => {
         },
     });
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
-    mainWindow.webContents.openDevTools();
+    // DevTools nur in der Entwicklung öffnen, nicht im ausgelieferten Build.
+    if (!app.isPackaged) {
+        mainWindow.webContents.openDevTools();
+    }
 };
 
 // --- App Events ---
