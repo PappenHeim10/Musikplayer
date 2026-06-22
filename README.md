@@ -127,7 +127,7 @@ npm test
 - [ ] Search / filter — [#14](https://github.com/PappenHeim10/Musikplayer/issues/14)
 - [ ] Shuffle & repeat — [#15](https://github.com/PappenHeim10/Musikplayer/issues/15)
 - [ ] Recursive folder scanning — [#16](https://github.com/PappenHeim10/Musikplayer/issues/16)
-- [ ] ESLint setup
+- [ ] ESLint setup — [#18](https://github.com/PappenHeim10/Musikplayer/issues/18)
 
 See the [open issues](https://github.com/PappenHeim10/Musikplayer/issues) for details.
 
