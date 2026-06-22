@@ -1,78 +1,142 @@
-# Musikplayer (Electron)
+# 🎵 Musik Konsole
 
-## Beschreibung
+> A minimal, local-first desktop music player built with Electron — pick a folder, browse your tracks, and play them through a warm "hi-fi console" interface.
 
-Dies ist ein einfacher Musikplayer, der mit Electron entwickelt wurde. Er ermöglicht es Benutzern, Musikdateien aus einem ausgewählten Ordner abzuspielen. Das Projekt befindet sich noch in der Entwicklung, aber die grundlegende Musikwiedergabe ist bereits implementiert.
+[![Electron](https://img.shields.io/badge/Electron-34.3.0-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Tests](https://img.shields.io/badge/tests-node%3Atest-blue)](#testing)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#)
+[![License](https://img.shields.io/badge/license-MIT-yellow)](./LICENSE)
+[![Status](https://img.shields.io/badge/status-in%20development-orange)](#roadmap)
 
-## Funktionen
+---
 
-*   **Ordnerauswahl:** Benutzer können einen Ordner auswählen, der ihre Musikdateien enthält.
-*   **Musikwiedergabe:** Audiodateien aus dem ausgewählten Ordner können abgespielt werden (MP3, WAV, FLAC, OGG/Opus, M4A, AAC).
-*   **Wiedergabesteuerung:**
-    *   Play/Pause
-    *   Nächster Titel
-    *   Vorheriger Titel
-*   **Titelliste:** Anzeige der verfügbaren Titel im ausgewählten Ordner.
-*   **Aktueller Titel:** Anzeige des aktuell abgespielten Titels.
-* **Fehlermeldungen:** Anzeige von Fehlermeldungen, falls ein Track nicht geladen werden kann.
+## Overview
 
-## Technologie
+**Musik Konsole** is a lightweight Electron desktop app for playing the audio files in a folder you choose. The renderer never touches the file system directly: a small local HTTP server in the main process exposes the library and streams audio (with range support for seeking), keeping `contextIsolation` on and `nodeIntegration` off.
 
-*   **Electron:** Ermöglicht die Erstellung einer plattformübergreifenden Desktop-Anwendung mit Webtechnologien.
-*   **Node.js:** Wird für den Zugriff auf das Dateisystem und die Kommunikation zwischen Haupt- und Renderer-Prozess verwendet.
-*   **JavaScript:** Die Hauptprogrammiersprache für die Logik und die Benutzeroberfläche.
-*   **HTML/CSS:** Für die Struktur und das Styling der Benutzeroberfläche.
-* **API** Es wird ein Server erstellt der die Route zu den Ordner über den PORT 3001 zurverfügung stellt
+## Features
 
-## Installation und Ausführung
+- 📂 **Folder picker** — choose any folder containing audio files.
+- ▶️ **Playback** — play, pause, stop, next, previous.
+- 🎚️ **Seek & volume** — draggable progress meter and volume control.
+- ⏱️ **Time readout** — current position and total duration (`m:ss`).
+- ⌨️ **Keyboard control** — transport without the mouse (see below).
+- 📜 **Track list** — numbered list of the folder's tracks with the active one highlighted.
+- 💾 **Remembers your folder** — the last folder is restored on the next launch.
+- 🟠 **Hi-fi console UI** — warm amber-on-dark theme with an animated equalizer while playing.
 
-1.  **Voraussetzungen:**
-    *   Node.js und npm müssen auf deinem System installiert sein.
-    *   Electron muss installiert sein.
-2.  **Klonen des Repositories:**
-    ```bash
-    git clone https://github.com/PappenHeim10/Musikplayer
-    cd [Name des Ordners]
-    ```
-3.  **Installation der Abhängigkeiten:**
-    ```bash
-    npm install
-    ```
-4.  **Starten der Anwendung:**
-    ```bash
-    npm start
-    ```
+### Supported formats
 
-## Bedienung
+| | Formats |
+|---|---|
+| **Audio** | MP3 · WAV · FLAC · OGG / OGA / Opus · M4A · AAC · WebA |
 
-1.  **Ordner auswählen:** Klicke auf die Schaltfläche "Ordner auswählen", um den Ordner mit deinen Musikdateien auszuwählen.
-2.  **Musik abspielen:** Die verfügbaren Titel werden in der Titelliste angezeigt. Klicke auf einen Titel, um ihn abzuspielen.
-3.  **Wiedergabe steuern:** Verwende die Play/Pause-, Nächster Titel- und Vorheriger Titel-Schaltflächen, um die Wiedergabe zu steuern.
+The `Content-Type` is derived from the file extension; unsupported files are filtered out of the list.
 
-## Bekannte Einschränkungen
+## Tech stack
 
-*   **Keine Playlist-Funktion:** Es gibt noch keine Möglichkeit, Playlists zu erstellen oder zu verwalten.
-*   **Keine Metadaten:** Es werden keine Metadaten (z.B. Künstler, Album) angezeigt.
-* **Keine Suche:** Es gibt noch keine Suchfunktion.
-* **Keine Shuffle/Repeat:** Es gibt noch keine Shuffle oder Repeat Funktion.
-* **Einfache Oberfläche:** Die Benutzeroberfläche ist noch sehr einfach gehalten.
+| Layer | Technology |
+|---|---|
+| Shell | [Electron](https://www.electronjs.org/) 34 + [Electron Forge](https://www.electronforge.io/) |
+| Backend (main process) | Node.js `http` server — `/api/songs`, `/api/audio/:file` |
+| Frontend (renderer) | Vanilla JavaScript, HTML, CSS (no framework, no bundler) |
+| Tests | Built-in `node:test` runner |
 
-## Zukünftige Entwicklung
+## Getting started
 
-Die folgenden Funktionen sind für zukünftige Versionen geplant:
+### Prerequisites
 
-*   Playlist-Verwaltung.
-*   Anzeige von Metadaten.
-*   Zufallswiedergabe (Shuffle).
-*   Wiederholung (Repeat).
-*   Suchfunktion.
-*   Verbesserung der Benutzeroberfläche.
-*   Weitere Fehlerbehebungen und Optimierungen.
+- [Node.js](https://nodejs.org/) ≥ 18 and npm
 
-## Mitwirken
+### Install & run
 
-Beiträge zu diesem Projekt sind willkommen! Wenn du Fehler findest oder Verbesserungsvorschläge hast, erstelle bitte ein Issue oder einen Pull Request.
+```bash
+git clone https://github.com/PappenHeim10/Musikplayer
+cd Musikplayer
+npm install
+npm start
+```
 
-## Kontakt
+### Build distributables
 
-Bei Fragen oder Anregungen kannst du dich gerne an lastxhunterx.css@gmail.com wenden.
+```bash
+npm run package   # package the app
+npm run make      # build installers for the current platform
+```
+
+## Usage
+
+1. Click **Ordner wählen** (Choose folder) and select a folder with audio files.
+2. The tracks appear in the list — click one to play it.
+3. Use the transport bar or the keyboard shortcuts to control playback.
+
+### Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `Space` | Play / Pause |
+| `→` | Next track |
+| `←` | Previous track |
+| `↑` / `↓` | Volume up / down |
+
+> Shortcuts are ignored while a slider is focused, so its native arrow-key behaviour is preserved.
+
+## Architecture
+
+The app is split across three processes/layers:
+
+1. **Main process** (`src/index.js`, `src/server.js`) — creates the window and starts a local HTTP server bound to `127.0.0.1`. It prefers port `3001` and falls back to a free OS-assigned port if that is taken. The selected folder is persisted to `settings.json` in the app's user-data directory.
+2. **Preload** (`src/preload.js`) — exposes a minimal, safe `window.electronAPI` over `contextBridge` (folder dialog, API port, folder-selected event).
+3. **Renderer** (`src/utils.js`, `src/ui.js`, `src/player.js`, `src/main.js`) — fetches the song list and audio from the local server and drives the UI. Organised under a `window.MP` namespace (classic scripts, since ES-module imports are blocked under `file://`).
+
+**Security:** path-traversal protection on the audio endpoint, CORS restricted to the app's own origin, and DevTools only opened in development.
+
+## Project structure
+
+```
+.
+├── src/
+│   ├── index.js        # main process: window, IPC, server bootstrap, folder persistence
+│   ├── server.js       # local HTTP server: endpoints, format/path/range logic
+│   ├── preload.js      # contextBridge → window.electronAPI
+│   ├── index.html      # markup
+│   ├── styles.css      # "hi-fi console" theme
+│   ├── utils.js        # pure helpers
+│   ├── ui.js           # view layer (DOM refs + rendering)
+│   ├── player.js       # audio engine factory
+│   └── main.js         # renderer bootstrap & wiring
+├── test/
+│   └── server.test.js  # unit & integration tests
+├── forge.config.js
+└── package.json
+```
+
+## Testing
+
+Unit and integration tests run on the built-in Node test runner — no extra dependencies:
+
+```bash
+npm test
+```
+
+## Roadmap
+
+- [ ] Metadata (artist / album / cover from ID3 tags)
+- [ ] Playlist management
+- [ ] Search / filter
+- [ ] Shuffle & repeat
+- [ ] Recursive folder scanning
+- [ ] ESLint setup
+
+## Contributing
+
+Contributions are welcome. If you find a bug or have an idea, please open an issue or a pull request.
+
+## License
+
+Released under the [MIT License](./LICENSE).
+
+## Contact
+
+Questions or suggestions? Reach out at **lastxhunterx.css@gmail.com**.
