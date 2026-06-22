@@ -21,6 +21,13 @@ contextBridge.exposeInMainWorld(
         openMusicFolderDialog: () => ipcRenderer.invoke('open-music-folder-dialog'),
 
         /**
+         * Fragt den tatsächlichen Port des lokalen HTTP-Servers ab.
+         * Kann vom Standard (3001) abweichen, falls dieser belegt war.
+         * @returns {Promise<number>} Der gebundene Port.
+         */
+        getApiPort: () => ipcRenderer.invoke('get-api-port'),
+
+        /**
          * Registriert eine Callback-Funktion, die aufgerufen wird, wenn der Main-Prozess
          * das Signal 'music-folder-selected' sendet.
          * Dies passiert, nachdem der Benutzer erfolgreich einen Ordner ausgewählt hat.
