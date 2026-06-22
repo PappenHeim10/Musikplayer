@@ -1,6 +1,7 @@
 // --- Importiere benötigte Module ---
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { createMusicServer } = require('./server'); // HTTP-Server (ausgelagert)
 
 let selectedMusicDirectory = null; // Variable für den Musikordner
@@ -50,6 +51,43 @@ if (require('electron-squirrel-startup')) {
     app.quit();
 }
 
+// --- Einstellungen (zuletzt gewählter Ordner) ---
+// Persistiert als JSON in app.getPath('userData') – ohne zusätzliche Dependency.
+function getSettingsFile() {
+    return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function loadSettings() {
+    try {
+        return JSON.parse(fs.readFileSync(getSettingsFile(), 'utf-8'));
+    } catch (err) {
+        return {}; // keine/ungültige Datei → leere Einstellungen
+    }
+}
+
+function saveSettings(settings) {
+    try {
+        fs.writeFileSync(getSettingsFile(), JSON.stringify(settings, null, 2));
+    } catch (err) {
+        console.error('[Main] Konnte Einstellungen nicht speichern:', err);
+    }
+}
+
+// Beim Start den zuletzt gewählten Ordner wiederherstellen – aber nur, wenn er
+// noch existiert (könnte gelöscht oder ein nicht gemountetes Laufwerk sein).
+function restoreMusicDirectory() {
+    const { musicDirectory } = loadSettings();
+    if (!musicDirectory) return;
+    try {
+        if (fs.statSync(musicDirectory).isDirectory()) {
+            selectedMusicDirectory = musicDirectory;
+            console.log('[Main] Letzten Musikordner wiederhergestellt:', musicDirectory);
+        }
+    } catch (err) {
+        console.log('[Main] Gespeicherter Musikordner nicht mehr verfügbar:', musicDirectory);
+    }
+}
+
 // --- createWindow Funktion (unverändert) ---
 const createWindow = () => {
     const mainWindow = new BrowserWindow({
@@ -70,6 +108,7 @@ const createWindow = () => {
 
 // --- App Events ---
 app.whenReady().then(() => {
+    restoreMusicDirectory(); // vor dem Fenster, damit die Liste sofort laden kann
     createWindow();
 
     app.on('activate', () => {
@@ -99,6 +138,7 @@ app.whenReady().then(() => {
         if (result && !result.canceled && result.filePaths.length > 0) {
             selectedMusicDirectory = result.filePaths[0]; // Pfad speichern
             console.log('[Main] Musikordner gesetzt:', selectedMusicDirectory);
+            saveSettings({ musicDirectory: selectedMusicDirectory }); // für nächsten Start merken
             // Renderer benachrichtigen, dass er die Liste neu laden soll
             event.sender.send('music-folder-selected');
         } else {
