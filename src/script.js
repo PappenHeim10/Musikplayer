@@ -2,7 +2,7 @@
  * Renderer-Prozess Skript (script.js) für den Electron Musik Player
  * Nutzt die lokale REST API (http://localhost:3001) zum Laden der Songliste und Audiodateien.
  */
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
     // DOM-Elemente holen
     const playButton = document.getElementById("playButton");
     const nextButton = document.getElementById("nextButton");
@@ -22,7 +22,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let isPlaying = false; // Spielt gerade ein Track?
     let tracks = []; // Array zum Speichern der Dateinamen der Songs
 
-    const API_BASE_URL = 'http://localhost:3001'; // Basis-URL für die lokale API
+    // Basis-URL für die lokale API. Der Port wird beim Start dynamisch vom
+    // Main-Prozess geholt (kann vom Standard 3001 abweichen). Wert dient als Fallback.
+    let API_BASE_URL = 'http://localhost:3001';
 
     // --- Kernfunktionen ---
 
@@ -361,6 +363,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // --- Initialisierung beim Laden der Seite ---
     console.log("DOM geladen. Initialisiere Player.");
+
+    // Tatsächlichen API-Port vom Main-Prozess holen (kann vom Standard 3001
+    // abweichen, falls dieser belegt war). Bei Fehler bleibt der Fallback aktiv.
+    try {
+        if (window.electronAPI?.getApiPort) {
+            const port = await window.electronAPI.getApiPort();
+            if (port) API_BASE_URL = `http://localhost:${port}`;
+        }
+    } catch (e) {
+        console.error("Konnte API-Port nicht ermitteln, nutze Fallback:", e);
+    }
+    console.log("API-Basis-URL:", API_BASE_URL);
+
     // Setze initiale Lautstärke
     updateVolume();
     // Versuche, die Songliste initial zu laden (falls schon ein Ordner im Backend gesetzt ist)
